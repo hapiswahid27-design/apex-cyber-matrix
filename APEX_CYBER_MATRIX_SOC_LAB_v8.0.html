@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="en" class="dark"><head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apex Cyber Matrix // Cyber Security Operations Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#030712',
+                            card: '#0a192f',
+                            border: '#172a45',
+                            green: '#00ff66',
+                            cyan: '#00f0ff',
+                            red: '#ff0055',
+                            yellow: '#f39c12'
+                        }
+                    },
+                    fontFamily: {
+                        mono: ['Courier New', Courier, monospace]
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap');
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #030712;
+            color: #00ff66;
+        }
+        .scanlines {
+            background: linear-gradient(
+                rgba(18, 16, 16, 0) 50%, 
+                rgba(0, 0, 0, 0.07) 50%
+            ), linear-gradient(
+                90deg,
+                rgba(255, 0, 0, 0.01),
+                rgba(0, 255, 0, 0.008),
+                rgba(0, 0, 255, 0.01)
+            );
+            background-size: 100% 4px, 6px 100%;
+        }
+        .glow-text {
+            text-shadow: 0 0 8px rgba(0, 255, 102, 0.6);
+        }
+        .glow-box {
+            box-shadow: 0 0 15px rgba(0, 255, 102, 0.15);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #050b14;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #172a45;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #00ff66;
+        }
+        @keyframes radar-sweep {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .radar-spinner {
+            animation: radar-sweep 4s linear infinite;
+        }
+    </style>
+<style>*, ::before, ::after{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }::backdrop{--tw-border-spacing-x:0;--tw-border-spacing-y:0;--tw-translate-x:0;--tw-translate-y:0;--tw-rotate:0;--tw-skew-x:0;--tw-skew-y:0;--tw-scale-x:1;--tw-scale-y:1;--tw-pan-x: ;--tw-pan-y: ;--tw-pinch-zoom: ;--tw-scroll-snap-strictness:proximity;--tw-gradient-from-position: ;--tw-gradient-via-position: ;--tw-gradient-to-position: ;--tw-ordinal: ;--tw-slashed-zero: ;--tw-numeric-figure: ;--tw-numeric-spacing: ;--tw-numeric-fraction: ;--tw-ring-inset: ;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-color:rgb(59 130 246 / 0.5);--tw-ring-offset-shadow:0 0 #0000;--tw-ring-shadow:0 0 #0000;--tw-shadow:0 0 #0000;--tw-shadow-colored:0 0 #0000;--tw-blur: ;--tw-brightness: ;--tw-contrast: ;--tw-grayscale: ;--tw-hue-rotate: ;--tw-invert: ;--tw-saturate: ;--tw-sepia: ;--tw-drop-shadow: ;--tw-backdrop-blur: ;--tw-backdrop-brightness: ;--tw-backdrop-contrast: ;--tw-backdrop-grayscale: ;--tw-backdrop-hue-rotate: ;--tw-backdrop-invert: ;--tw-backdrop-opacity: ;--tw-backdrop-saturate: ;--tw-backdrop-sepia: ;--tw-contain-size: ;--tw-contain-layout: ;--tw-contain-paint: ;--tw-contain-style: }/* ! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com */*,::after,::before{box-sizing:border-box;border-width:0;border-style:solid;border-color:#e5e7eb}::after,::before{--tw-content:''}:host,html{line-height:1.5;-webkit-text-size-adjust:100%;-moz-tab-size:4;tab-size:4;font-family:ui-sans-serif, system-ui, sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";font-feature-settings:normal;font-variation-settings:normal;-webkit-tap-highlight-color:transparent}body{margin:0;line-height:inherit}hr{height:0;color:inherit;border-top-width:1px}abbr:where([title]){-webkit-text-decoration:underline dotted;text-decoration:underline dotted}h1,h2,h3,h4,h5,h6{font-size:inherit;font-weight:inherit}a{color:inherit;text-decoration:inherit}b,strong{font-weight:bolder}code,kbd,pre,samp{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;font-feature-settings:normal;font-variation-settings:normal;font-size:1em}small{font-size:80%}sub,sup{font-size:75%;line-height:0;position:relative;vertical-align:baseline}sub{bottom:-.25em}sup{top:-.5em}table{text-indent:0;border-color:inherit;border-collapse:collapse}button,input,optgroup,select,textarea{font-family:inherit;font-feature-settings:inherit;font-variation-settings:inherit;font-size:100%;font-weight:inherit;line-height:inherit;letter-spacing:inherit;color:inherit;margin:0;padding:0}button,select{text-transform:none}button,input:where([type=button]),input:where([type=reset]),input:where([type=submit]){-webkit-appearance:button;background-color:transparent;background-image:none}:-moz-focusring{outline:auto}:-moz-ui-invalid{box-shadow:none}progress{vertical-align:baseline}::-webkit-inner-spin-button,::-webkit-outer-spin-button{height:auto}[type=search]{-webkit-appearance:textfield;outline-offset:-2px}::-webkit-search-decoration{-webkit-appearance:none}::-webkit-file-upload-button{-webkit-appearance:button;font:inherit}summary{display:list-item}blockquote,dd,dl,figure,h1,h2,h3,h4,h5,h6,hr,p,pre{margin:0}fieldset{margin:0;padding:0}legend{padding:0}menu,ol,ul{list-style:none;margin:0;padding:0}dialog{padding:0}textarea{resize:vertical}input::placeholder,textarea::placeholder{opacity:1;color:#9ca3af}[role=button],button{cursor:pointer}:disabled{cursor:default}audio,canvas,embed,iframe,img,object,svg,video{display:block;vertical-align:middle}img,video{max-width:100%;height:auto}[hidden]:where(:not([hidden=until-found])){display:none}.fixed{position:fixed}.absolute{position:absolute}.relative{position:relative}.sticky{position:sticky}.inset-0{inset:0px}.bottom-2{bottom:0.5rem}.left-2{left:0.5rem}.right-2{right:0.5rem}.top-0{top:0px}.z-50{z-index:50}.mx-auto{margin-left:auto;margin-right:auto}.my-1{margin-top:0.25rem;margin-bottom:0.25rem}.mb-2{margin-bottom:0.5rem}.mb-3{margin-bottom:0.75rem}.ml-2{margin-left:0.5rem}.mt-1{margin-top:0.25rem}.mt-2{margin-top:0.5rem}.inline-block{display:inline-block}.flex{display:flex}.grid{display:grid}.hidden{display:none}.h-10{height:2.5rem}.h-2{height:0.5rem}.h-3{height:0.75rem}.h-3\.5{height:0.875rem}.h-36{height:9rem}.h-4{height:1rem}.h-5{height:1.25rem}.h-52{height:13rem}.h-\[480px\]{height:480px}.h-full{height:100%}.min-h-screen{min-height:100vh}.w-10{width:2.5rem}.w-2{width:0.5rem}.w-3{width:0.75rem}.w-3\.5{width:0.875rem}.w-4{width:1rem}.w-5{width:1.25rem}.w-full{width:100%}.max-w-7xl{max-width:80rem}.max-w-sm{max-width:24rem}.flex-1{flex:1 1 0%}@keyframes ping{75%, 100%{transform:scale(2);opacity:0}}.animate-ping{animation:ping 1s cubic-bezier(0, 0, 0.2, 1) infinite}@keyframes pulse{50%{opacity:.5}}.animate-pulse{animation:pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite}.cursor-crosshair{cursor:crosshair}.cursor-pointer{cursor:pointer}.resize-none{resize:none}.grid-cols-1{grid-template-columns:repeat(1, minmax(0, 1fr))}.grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}.grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}.flex-col{flex-direction:column}.flex-wrap{flex-wrap:wrap}.items-start{align-items:flex-start}.items-center{align-items:center}.justify-center{justify-content:center}.justify-between{justify-content:space-between}.gap-1{gap:0.25rem}.gap-1\.5{gap:0.375rem}.gap-2{gap:0.5rem}.gap-3{gap:0.75rem}.gap-4{gap:1rem}.gap-6{gap:1.5rem}.space-x-1\.5 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.375rem * var(--tw-space-x-reverse));margin-left:calc(0.375rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-2 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.5rem * var(--tw-space-x-reverse));margin-left:calc(0.5rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-3 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(0.75rem * var(--tw-space-x-reverse));margin-left:calc(0.75rem * calc(1 - var(--tw-space-x-reverse)))}.space-x-4 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1rem * var(--tw-space-x-reverse));margin-left:calc(1rem * calc(1 - var(--tw-space-x-reverse)))}.space-y-1 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(0.25rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(0.25rem * var(--tw-space-y-reverse))}.space-y-4 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1rem * var(--tw-space-y-reverse))}.space-y-6 > :not([hidden]) ~ :not([hidden]){--tw-space-y-reverse:0;margin-top:calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));margin-bottom:calc(1.5rem * var(--tw-space-y-reverse))}.overflow-hidden{overflow:hidden}.overflow-y-auto{overflow-y:auto}.overflow-x-hidden{overflow-x:hidden}.rounded{border-radius:0.25rem}.rounded-full{border-radius:9999px}.rounded-lg{border-radius:0.5rem}.rounded-xl{border-radius:0.75rem}.border{border-width:1px}.border-b{border-bottom-width:1px}.border-t{border-top-width:1px}.bg-amber-400{--tw-bg-opacity:1;background-color:rgb(251 191 36 / var(--tw-bg-opacity, 1))}.bg-black\/70{background-color:rgb(0 0 0 / 0.7)}.bg-gradient-to-r{background-image:linear-gradient(to right, var(--tw-gradient-stops))}.p-2{padding:0.5rem}.p-3{padding:0.75rem}.p-4{padding:1rem}.p-5{padding:1.25rem}.p-6{padding:1.5rem}.px-2{padding-left:0.5rem;padding-right:0.5rem}.px-3{padding-left:0.75rem;padding-right:0.75rem}.px-4{padding-left:1rem;padding-right:1rem}.px-5{padding-left:1.25rem;padding-right:1.25rem}.py-0\.5{padding-top:0.125rem;padding-bottom:0.125rem}.py-1{padding-top:0.25rem;padding-bottom:0.25rem}.py-1\.5{padding-top:0.375rem;padding-bottom:0.375rem}.py-2{padding-top:0.5rem;padding-bottom:0.5rem}.py-2\.5{padding-top:0.625rem;padding-bottom:0.625rem}.py-3{padding-top:0.75rem;padding-bottom:0.75rem}.pb-2{padding-bottom:0.5rem}.pb-3{padding-bottom:0.75rem}.pb-4{padding-bottom:1rem}.pr-1{padding-right:0.25rem}.pt-3{padding-top:0.75rem}.text-left{text-align:left}.text-center{text-align:center}.font-mono{font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}.text-\[10px\]{font-size:10px}.text-\[11px\]{font-size:11px}.text-base{font-size:1rem;line-height:1.5rem}.text-sm{font-size:0.875rem;line-height:1.25rem}.text-xl{font-size:1.25rem;line-height:1.75rem}.text-xs{font-size:0.75rem;line-height:1rem}.font-bold{font-weight:700}.uppercase{text-transform:uppercase}.leading-relaxed{line-height:1.625}.tracking-wider{letter-spacing:0.05em}.tracking-widest{letter-spacing:0.1em}.text-amber-400{--tw-text-opacity:1;color:rgb(251 191 36 / var(--tw-text-opacity, 1))}.text-emerald-400{--tw-text-opacity:1;color:rgb(52 211 153 / var(--tw-text-opacity, 1))}.text-gray-300{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.text-gray-400{--tw-text-opacity:1;color:rgb(156 163 175 / var(--tw-text-opacity, 1))}.text-gray-500{--tw-text-opacity:1;color:rgb(107 114 128 / var(--tw-text-opacity, 1))}.underline{-webkit-text-decoration-line:underline;text-decoration-line:underline}.placeholder-gray-600::placeholder{--tw-placeholder-opacity:1;color:rgb(75 85 99 / var(--tw-placeholder-opacity, 1))}.shadow-lg{--tw-shadow:0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 10px 15px -3px var(--tw-shadow-color), 0 4px 6px -4px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.shadow-md{--tw-shadow:0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);--tw-shadow-colored:0 4px 6px -1px var(--tw-shadow-color), 0 2px 4px -2px var(--tw-shadow-color);box-shadow:var(--tw-ring-offset-shadow, 0 0 #0000), var(--tw-ring-shadow, 0 0 #0000), var(--tw-shadow)}.backdrop-blur{--tw-backdrop-blur:blur(8px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.backdrop-blur-sm{--tw-backdrop-blur:blur(4px);-webkit-backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);backdrop-filter:var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia)}.transition{transition-property:color, background-color, border-color, fill, stroke, opacity, box-shadow, transform, filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;transition-property:color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter, -webkit-text-decoration-color, -webkit-backdrop-filter;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.transition-all{transition-property:all;transition-timing-function:cubic-bezier(0.4, 0, 0.2, 1);transition-duration:150ms}.duration-100{transition-duration:100ms}.duration-200{transition-duration:200ms}.hover\:border-amber-400:hover{--tw-border-opacity:1;border-color:rgb(251 191 36 / var(--tw-border-opacity, 1))}.hover\:bg-emerald-400:hover{--tw-bg-opacity:1;background-color:rgb(52 211 153 / var(--tw-bg-opacity, 1))}.hover\:text-amber-400:hover{--tw-text-opacity:1;color:rgb(251 191 36 / var(--tw-text-opacity, 1))}.hover\:text-gray-200:hover{--tw-text-opacity:1;color:rgb(229 231 235 / var(--tw-text-opacity, 1))}.hover\:text-gray-300:hover{--tw-text-opacity:1;color:rgb(209 213 219 / var(--tw-text-opacity, 1))}.focus\:outline-none:focus{outline:2px solid transparent;outline-offset:2px}.group:hover .group-hover\:translate-x-1{--tw-translate-x:0.25rem;transform:translate(var(--tw-translate-x), var(--tw-translate-y)) rotate(var(--tw-rotate)) skewX(var(--tw-skew-x)) skewY(var(--tw-skew-y)) scaleX(var(--tw-scale-x)) scaleY(var(--tw-scale-y))}@media (min-width: 640px){.sm\:grid-cols-4{grid-template-columns:repeat(4, minmax(0, 1fr))}.sm\:flex-row{flex-direction:row}.sm\:items-center{align-items:center}.sm\:space-x-6 > :not([hidden]) ~ :not([hidden]){--tw-space-x-reverse:0;margin-right:calc(1.5rem * var(--tw-space-x-reverse));margin-left:calc(1.5rem * calc(1 - var(--tw-space-x-reverse)))}.sm\:p-6{padding:1.5rem}.sm\:text-2xl{font-size:1.5rem;line-height:2rem}.sm\:text-sm{font-size:0.875rem;line-height:1.25rem}}@media (min-width: 768px){.md\:flex{display:flex}.md\:grid-cols-2{grid-template-columns:repeat(2, minmax(0, 1fr))}}@media (min-width: 1024px){.lg\:col-span-2{grid-column:span 2 / span 2}.lg\:grid-cols-3{grid-template-columns:repeat(3, minmax(0, 1fr))}}
+        #world-map { height: 320px; width: 100%; background:#06101b; border-radius:8px; z-index:1; }
+        .leaflet-container { background:#06101b; font-family:'Courier New',monospace; }
+        .leaflet-control-attribution { font-size:9px !important; }
+        .leaflet-popup-content-wrapper,.leaflet-popup-tip { background:#071827; color:#00ff66; border:1px solid #00f0ff; }
+        .leaflet-control-zoom a { background:#071827 !important; color:#00ff66 !important; border-color:#17405a !important; }
+    </style></head>
+<body class="min-h-screen bg-cyber-dark text-emerald-400 relative overflow-x-hidden scanlines">
+
+    <!-- Top Navigation Bar -->
+    <header class="border-b border-cyber-border bg-cyber-card/90 backdrop-blur sticky top-0 z-50 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center space-x-3">
+                <div class="h-3 w-3 rounded-full bg-cyber-green animate-ping"></div>
+                <h1 class="text-xl sm:text-2xl font-bold tracking-wider text-cyber-green glow-text">
+                    APEX CYBER MATRIX <span class="text-xs px-2 py-0.5 rounded bg-cyber-green/10 border border-cyber-green/30 text-cyber-green">FORTIGUARD v8.0 SOC LAB</span>
+                </h1>
+            </div>
+            <div class="flex items-center space-x-4 sm:space-x-6 text-xs sm:text-sm">
+                <div class="hidden md:flex items-center space-x-2">
+                    <span class="text-gray-400">DEFENSE GRID:</span>
+                    <span class="text-cyber-green font-bold animate-pulse">GLOBAL SHIELD ONLINE</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-400">LATENCY:</span>
+                    <span class="text-cyber-cyan" id="ping-latency">15ms</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <span class="text-gray-400">UTC:</span>
+                    <span class="text-amber-400" id="live-clock">15:29:54</span>
+                </div>
+                <!-- Download Button -->
+                <button onclick="downloadDashboardFile()" class="px-3 py-1.5 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan hover:bg-cyber-cyan hover:text-cyber-dark font-bold rounded text-xs transition flex items-center gap-1.5 shadow-md">
+                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                    DOWNLOAD FILE
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="max-w-7xl mx-auto p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+        <!-- Left Column: Global Attack Shield Map & Metrics -->
+        <div class="space-y-6">
+            
+            <!-- Global Attack Radar Shield Card -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-5 glow-cyan relative overflow-hidden">
+                <div class="flex justify-between items-center mb-3 border-b border-cyber-border pb-3">
+                    <h2 class="text-sm font-bold tracking-widest text-cyber-cyan uppercase flex items-center gap-2">
+                        <svg class="w-4 h-4 text-cyber-cyan" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                        Global Attack Shield Map
+                    </h2>
+                    <span class="text-[10px] text-cyber-green bg-cyber-green/10 border border-cyber-green/30 px-2 py-0.5 rounded font-bold animate-pulse">MAP VIEW</span>
+                </div>
+
+                <!-- Region Selector for Worldwide Coverage -->
+                <div class="grid grid-cols-3 gap-1.5 mb-3 text-[11px]">
+                    <button onclick="filterRegion('ALL')" id="reg-ALL" class="py-1 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan rounded font-bold transition">All World</button>
+                    <button onclick="filterRegion('ASIA')" id="reg-ASIA" class="py-1 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition">Asia</button>
+                    <button onclick="filterRegion('EUROPE')" id="reg-EUROPE" class="py-1 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition">Europe</button>
+                    <button onclick="filterRegion('AMERICAS')" id="reg-AMERICAS" class="py-1 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition">Americas</button>
+                    <button onclick="filterRegion('AFRICA')" id="reg-AFRICA" class="py-1 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition">Africa</button>
+                    <button onclick="filterRegion('OCEANIA')" id="reg-OCEANIA" class="py-1 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition">Oceania</button>
+                </div>
+
+                <!-- Malaysia / Southeast Asia command shortcuts -->
+                <div class="grid grid-cols-2 gap-1.5 mb-3 text-[11px]">
+                    <button onclick="filterRegion('MALAYSIA')" id="reg-MALAYSIA" class="py-2 bg-cyber-dark border border-cyber-green/60 text-cyber-green rounded font-bold transition">🇲🇾 Malaysia Command</button>
+                    <button onclick="filterRegion('SE_ASIA')" id="reg-SE_ASIA" class="py-2 bg-cyber-dark border border-cyber-cyan/60 text-cyber-cyan rounded font-bold transition">🌏 Asia Command</button>
+                </div>
+                <div class="mb-3">
+                    <input id="map-search" type="search" oninput="searchMapLocation(this.value)" placeholder="Search country or city..." aria-label="Search country or city" class="w-full bg-cyber-dark border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green placeholder-gray-500 outline-none focus:border-cyber-cyan">
+                    <div class="flex justify-end mt-1"><button onclick="filterRegion('ALL')" class="text-[10px] text-cyber-cyan underline">Reset to World Map</button></div>
+                </div>
+
+                <!-- Interactive Canvas Radar -->
+                <div class="relative w-full bg-cyber-dark border border-cyber-border rounded-lg overflow-hidden p-1">
+                    <div id="world-map" role="application" aria-label="Interactive world map"></div>
+                    <div class="flex justify-between items-center text-[10px] bg-black/80 px-2 py-1 rounded border border-cyber-border/60 mt-1">
+                        <span class="text-gray-300" id="radar-target-info">SECTOR: ALL DEFENSE GRID</span>
+                        <span class="text-cyber-green font-bold">MAP: OPENSTREETMAP</span>
+                    </div>
+                </div>
+                <p class="text-[10px] text-gray-400 mt-2 text-center">Peta interaktif sebenar: zum, gerakkan peta, pilih nod negara atau cari bandar. Penanda ialah lokasi geografi; data ancaman langsung belum disambungkan.</p>
+            </div>
+
+            <!-- Worldwide Nation Nodes Directory (Clickable) -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box">
+                <div class="flex justify-between items-center mb-3 border-b border-cyber-border pb-2">
+                    <h2 class="text-xs font-bold tracking-widest text-cyber-green uppercase">Worldwide Nation Nodes</h2>
+                    <span class="text-[10px] text-gray-400">Click to Inspect</span>
+                </div>
+                <div id="nation-list" class="grid grid-cols-2 gap-1.5 h-36 overflow-y-auto text-xs pr-1"><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Malaysia <span class="text-[10px] text-gray-500">[MY]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Singapore <span class="text-[10px] text-gray-500">[SG]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Indonesia <span class="text-[10px] text-gray-500">[ID]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Japan <span class="text-[10px] text-gray-500">[JP]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">South Korea <span class="text-[10px] text-gray-500">[KR]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">China <span class="text-[10px] text-gray-500">[CN]</span></span>
+                    <span class="text-[10px] text-cyber-green">MONITORED</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">India <span class="text-[10px] text-gray-500">[IN]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Thailand <span class="text-[10px] text-gray-500">[TH]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Vietnam <span class="text-[10px] text-gray-500">[VN]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Philippines <span class="text-[10px] text-gray-500">[PH]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Taiwan <span class="text-[10px] text-gray-500">[TW]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Pakistan <span class="text-[10px] text-gray-500">[PK]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">United Kingdom <span class="text-[10px] text-gray-500">[GB]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Germany <span class="text-[10px] text-gray-500">[DE]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">France <span class="text-[10px] text-gray-500">[FR]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Russia <span class="text-[10px] text-gray-500">[RU]</span></span>
+                    <span class="text-[10px] text-cyber-green">MONITORED</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Switzerland <span class="text-[10px] text-gray-500">[CH]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Netherlands <span class="text-[10px] text-gray-500">[NL]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Sweden <span class="text-[10px] text-gray-500">[SE]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Italy <span class="text-[10px] text-gray-500">[IT]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Spain <span class="text-[10px] text-gray-500">[ES]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Ukraine <span class="text-[10px] text-gray-500">[UA]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">United States <span class="text-[10px] text-gray-500">[US]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Canada <span class="text-[10px] text-gray-500">[CA]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Brazil <span class="text-[10px] text-gray-500">[BR]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Mexico <span class="text-[10px] text-gray-500">[MX]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Argentina <span class="text-[10px] text-gray-500">[AR]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Chile <span class="text-[10px] text-gray-500">[CL]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">South Africa <span class="text-[10px] text-gray-500">[ZA]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Egypt <span class="text-[10px] text-gray-500">[EG]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Nigeria <span class="text-[10px] text-gray-500">[NG]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Kenya <span class="text-[10px] text-gray-500">[KE]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Morocco <span class="text-[10px] text-gray-500">[MA]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Australia <span class="text-[10px] text-gray-500">[AU]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">New Zealand <span class="text-[10px] text-gray-500">[NZ]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div><div class="bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition">
+                    <span class="text-gray-300 font-bold">Fiji <span class="text-[10px] text-gray-500">[FJ]</span></span>
+                    <span class="text-[10px] text-cyber-green">REFERENCE</span>
+                </div></div>
+            </div>
+
+            <!-- Tactical Counters -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box grid grid-cols-3 gap-3 text-center text-xs">
+                <div class="bg-cyber-dark border border-cyber-border p-2 rounded-lg">
+                    <div class="text-gray-400 text-[10px]">DEMO COUNTER</div>
+                    <div class="text-cyber-green font-bold text-sm mt-1" id="counter-blocked">1,489,223</div>
+                </div>
+                <div class="bg-cyber-dark border border-cyber-border p-2 rounded-lg">
+                    <div class="text-gray-400 text-[10px]">REFERENCE NODES</div>
+                    <div class="text-cyber-cyan font-bold text-sm mt-1">195 / 195</div>
+                </div>
+                <div class="bg-cyber-dark border border-cyber-border p-2 rounded-lg">
+                    <div class="text-gray-400 text-[10px]">SIMULATION COUNT</div>
+                    <div class="text-amber-400 font-bold text-sm mt-1" id="counter-strikes">42,810</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Operative Data Entry Coding Console & Logs -->
+        <div class="lg:col-span-2 space-y-6">
+            
+            <!-- Operative Data Entry Coding Console -->
+            <div class="bg-cyber-card border border-cyber-border rounded-xl p-5 glow-cyan relative flex flex-col h-[480px]">
+                
+                <!-- Console Top Header -->
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-4 border-b border-cyber-border gap-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="flex space-x-1.5">
+                            <span class="h-3 w-3 rounded-full bg-cyber-red inline-block"></span>
+                            <span class="h-3 w-3 rounded-full bg-amber-400 inline-block"></span>
+                            <span class="h-3 w-3 rounded-full bg-cyber-green inline-block"></span>
+                        </div>
+                        <span class="text-sm font-bold tracking-widest text-cyber-cyan ml-2">OPERATIVE_CONSOLE // DATA_ENTRY_CODING</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs text-gray-400">ENGINE:</span>
+                        <select id="console-lang" class="bg-cyber-dark border border-cyber-border text-cyber-green text-xs rounded px-2 py-1 focus:outline-none focus:border-cyber-green">
+                            <option value="python">PYTHON EXPLOIT ENGINE v3.11</option>
+                            <option value="bash">BASH ROOT SHELL</option>
+                            <option value="assembly">LOW-LEVEL ASSEMBLY</option>
+                            <option value="sql">SQL INJECTION MATRIX</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Preset Hacker Script Buttons -->
+                <div class="py-3 grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
+                    <button onclick="injectPreset('bypass')" class="p-2 bg-cyber-dark border border-cyber-border hover:border-cyber-green text-gray-300 hover:text-cyber-green rounded transition text-left flex items-center justify-between group">
+                        <span>// Root Bypass</span>
+                        <span class="text-cyber-green group-hover:translate-x-1 transition">→</span>
+                    </button>
+                    <button onclick="injectPreset('ddos')" class="p-2 bg-cyber-dark border border-cyber-border hover:border-cyber-cyan text-gray-300 hover:text-cyber-cyan rounded transition text-left flex items-center justify-between group">
+                        <span>// DDoS Scrub</span>
+                        <span class="text-cyber-cyan group-hover:translate-x-1 transition">→</span>
+                    </button>
+                    <button onclick="injectPreset('neural')" class="p-2 bg-cyber-dark border border-cyber-border hover:border-amber-400 text-gray-300 hover:text-amber-400 rounded transition text-left flex items-center justify-between group">
+                        <span>// Neural Sync</span>
+                        <span class="text-amber-400 group-hover:translate-x-1 transition">→</span>
+                    </button>
+                    <button onclick="injectPreset('override')" class="p-2 bg-cyber-dark border border-cyber-border hover:border-cyber-red text-gray-300 hover:text-cyber-red rounded transition text-left flex items-center justify-between group">
+                        <span>// Core Override</span>
+                        <span class="text-cyber-red group-hover:translate-x-1 transition">→</span>
+                    </button>
+                </div>
+
+                <!-- Textarea for Data Entry Coding -->
+                <div class="flex-1 flex flex-col gap-1.5 my-1">
+                    <div class="flex justify-between items-center text-xs text-gray-400">
+                        <label for="code-input" class="flex items-center gap-1">
+                            <svg class="w-3.5 h-3.5 text-cyber-green" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path></svg>
+                            ENTER SCRIPT OR DATA ENTRY PAYLOAD:
+                        </label>
+                        <span class="text-cyber-green font-mono" id="char-count">265 bytes</span>
+                    </div>
+                    <textarea id="code-input" class="w-full flex-1 bg-cyber-dark border border-cyber-border rounded-lg p-3 text-xs sm:text-sm font-mono text-cyber-green focus:outline-none focus:border-cyber-green resize-none leading-relaxed placeholder-gray-600" placeholder="Taip arahan skrip, kod Python, atau data entry di sini..." oninput="updateCharCount()">import fortiguard_matrix as fm
+from core.sec import bypass_firewall
+
+session = fm.initialize_connection(node="GLOBAL_DEFENSE_GRID", secure=True)
+bypass_firewall(session, signature="0xFF_ROOT_OVERRIDE")
+print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
+                </div>
+
+                <!-- Progress Bar Simulation -->
+                <div id="progress-container" class="hidden mb-2 space-y-1">
+                    <div class="flex justify-between text-xs font-mono">
+                        <span id="progress-status-text" class="text-cyber-cyan animate-pulse">Executing quantum handshake...</span>
+                        <span id="progress-percentage" class="text-cyber-green font-bold">0%</span>
+                    </div>
+                    <div class="w-full bg-cyber-dark rounded-full h-2 border border-cyber-border overflow-hidden">
+                        <div id="progress-bar-fill" class="bg-gradient-to-r from-cyber-cyan to-cyber-green h-2 transition-all duration-100" style="width: 0%"></div>
+                    </div>
+                </div>
+
+                <!-- Action Footer -->
+                <div class="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-cyber-border">
+                    <div class="flex items-center space-x-2">
+                        <button onclick="executeCode()" class="px-5 py-2.5 bg-cyber-green/10 border border-cyber-green text-cyber-green hover:bg-cyber-green hover:text-cyber-dark font-bold text-xs sm:text-sm rounded-lg transition duration-200 flex items-center gap-2 shadow-lg shadow-cyber-green/10">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            EXECUTE SCRIPT
+                        </button>
+                        <button onclick="clearConsole()" class="px-3 py-2.5 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-cyber-red hover:border-cyber-red text-xs rounded-lg transition">
+                            CLEAR
+                        </button>
+                    </div>
+                    <div class="text-[11px] text-gray-400 flex items-center gap-1.5">
+                        <span class="inline-block h-2 w-2 rounded-full bg-cyber-green animate-ping"></span>
+                        Status: <span class="text-cyber-green font-bold" id="console-status">READY FOR INPUT</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Terminal Output Logs & Live Threat Feed -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Terminal Output Log -->
+                <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box">
+                    <div class="flex justify-between items-center mb-2 border-b border-cyber-border pb-2">
+                        <h2 class="text-xs font-bold tracking-widest text-cyber-green uppercase flex items-center gap-2">
+                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                            Terminal Output Log
+                        </h2>
+                        <button onclick="clearLogs()" class="text-[10px] text-gray-500 hover:text-gray-300 underline">Clear</button>
+                    </div>
+                    <div id="terminal-logs" class="bg-cyber-dark border border-cyber-border rounded-lg p-3 h-36 overflow-y-auto text-xs font-mono space-y-1 text-gray-300">
+                        <div class="text-gray-500">[System Initialized] FortiGuard Global Threat Intelligence Active.</div>
+                        <div class="text-cyber-cyan">[Ready] Enter custom coding or select preset payload above.</div>
+                    </div>
+                </div>
+
+                <!-- Verified public threat intelligence: CISA KEV catalogue -->
+                <section class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box" aria-labelledby="kev-title">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-2 border-b border-cyber-border pb-2">
+                        <div>
+                            <h2 id="kev-title" class="text-xs font-bold tracking-widest text-cyber-cyan uppercase">Verified Threat Intelligence</h2>
+                            <p class="text-[10px] text-gray-400 mt-1">CISA Known Exploited Vulnerabilities (KEV)</p>
+                        </div>
+                        <button id="kev-refresh" type="button" onclick="loadKevFeed()" class="px-3 py-1.5 border border-cyber-cyan text-cyber-cyan rounded text-[10px] font-bold">REFRESH FEED</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mb-3 text-[10px]">
+                        <div class="bg-cyber-dark border border-cyber-border rounded p-2"><div class="text-gray-500">CATALOGUE ENTRIES</div><div id="kev-count" class="text-cyber-green text-lg font-bold">—</div></div>
+                        <div class="bg-cyber-dark border border-cyber-border rounded p-2"><div class="text-gray-500">LAST FETCH (LOCAL)</div><div id="kev-updated" class="text-cyber-green text-xs">Not loaded</div></div>
+                    </div>
+                    <div id="kev-status" role="status" aria-live="polite" class="text-[10px] text-amber-400 mb-2">Waiting for CISA catalogue request…</div>
+                    <div id="kev-list" class="bg-cyber-dark border border-cyber-border rounded-lg p-3 max-h-72 overflow-y-auto space-y-3 text-[11px]">
+                        <p class="text-gray-400">Press REFRESH FEED to retrieve the latest published CISA KEV catalogue.</p>
+                    </div>
+                    <div class="mt-3 flex flex-wrap justify-between gap-2 text-[10px]">
+                        <span class="text-gray-500">Catalogue data, not a live incident/attack stream.</span>
+                        <a class="text-cyber-cyan underline" href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener noreferrer">Open CISA source ↗</a>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+
+
+        <!-- APEX v8.0 SOC LAB -->
+        <section class="lg:col-span-3 bg-cyber-card border border-cyber-green/50 rounded-xl p-4 glow-box mt-2" aria-labelledby="soc-lab-title">
+            <div class="flex flex-wrap justify-between items-center gap-2 border-b border-cyber-border pb-3 mb-3">
+                <div>
+                    <h2 id="soc-lab-title" class="text-xs font-bold tracking-widest text-cyber-green uppercase">APEX SOC LAB // DEFENSIVE OPERATIONS</h2>
+                    <p class="text-[10px] text-gray-400 mt-1">Controlled training workspace · no real attacks are launched</p>
+                </div>
+                <span class="text-[10px] border border-cyber-green/50 rounded px-2 py-1 text-cyber-green">LAB MODE</span>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+                <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-[10px] text-gray-500">LAB EVENTS</div><div id="soc-event-count" class="text-xl font-bold text-cyber-green">0</div></div>
+                <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-[10px] text-gray-500">OPEN CASES</div><div id="soc-open-count" class="text-xl font-bold text-amber-300">0</div></div>
+                <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-[10px] text-gray-500">HIGH / CRITICAL</div><div id="soc-high-count" class="text-xl font-bold text-red-400">0</div></div>
+                <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-[10px] text-gray-500">LAB STATUS</div><div class="text-sm font-bold text-cyber-green">READY</div></div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div class="bg-cyber-dark border border-cyber-border rounded-lg p-3">
+                    <h3 class="text-[11px] font-bold text-cyber-cyan mb-2">DEFENSIVE SCENARIO EXERCISE</h3>
+                    <p class="text-[10px] text-gray-400 mb-3">Choose a safe, pre-defined training scenario. It creates a clearly labelled local event for investigation practice.</p>
+                    <select id="soc-scenario" class="w-full bg-black border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green mb-2">
+                        <option value="phishing">Phishing email reported</option>
+                        <option value="malware">Endpoint malware alert (training)</option>
+                        <option value="login">Repeated failed login attempts (training)</option>
+                        <option value="web">Suspicious web request (training)</option>
+                        <option value="data">Unusual data transfer alert (training)</option>
+                    </select>
+                    <button id="soc-run-scenario" type="button" class="w-full border border-cyber-green text-cyber-green rounded px-3 py-2 text-xs font-bold">CREATE LAB EVENT</button>
+                    <p id="soc-scenario-status" role="status" class="text-[10px] text-gray-400 mt-2">No exercise started.</p>
+                </div>
+                <div class="bg-cyber-dark border border-cyber-border rounded-lg p-3">
+                    <h3 class="text-[11px] font-bold text-cyber-cyan mb-2">INCIDENT RESPONSE PLAYBOOK</h3>
+                    <ol class="list-decimal pl-4 space-y-1 text-[10px] text-gray-300">
+                        <li><b class="text-cyber-green">Identify:</b> validate alert and record source/evidence.</li>
+                        <li><b class="text-cyber-green">Triage:</b> assess scope, impact and severity.</li>
+                        <li><b class="text-cyber-green">Contain:</b> isolate only authorised affected assets.</li>
+                        <li><b class="text-cyber-green">Eradicate:</b> remove cause and close the weakness.</li>
+                        <li><b class="text-cyber-green">Recover:</b> restore safely and monitor.</li>
+                        <li><b class="text-cyber-green">Lessons:</b> document timeline and prevention.</li>
+                    </ol>
+                </div>
+            </div>
+            <div class="mt-3 bg-cyber-dark border border-cyber-border rounded-lg p-3">
+                <div class="flex flex-wrap justify-between items-center gap-2 mb-2">
+                    <h3 class="text-[11px] font-bold text-cyber-cyan">SOC LAB EVENT QUEUE</h3>
+                    <button id="soc-clear-lab" type="button" class="text-[10px] border border-cyber-red text-cyber-red rounded px-2 py-1">CLEAR LAB EVENTS</button>
+                </div>
+                <div id="soc-lab-events" class="space-y-2 text-[10px]"><p class="text-gray-500">No lab events yet. Create a scenario to practise triage and response.</p></div>
+            </div>
+            <p class="text-[10px] text-amber-300 mt-3">Training notice: these events are generated locally for practice. This SOC Lab does not detect attacks on your iPhone, Wi-Fi, computers or servers. Real monitoring requires authorised log sources and security sensors.</p>
+        </section>
+
+        <!-- v7.1 SOC workflow overview -->
+        <section class="lg:col-span-3 bg-cyber-card border border-cyber-cyan/40 rounded-xl p-4 mb-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-xs font-bold tracking-widest text-cyber-cyan">SOC WORKSPACE // V8.0</h2>
+                    <p class="text-[10px] text-gray-300 mt-1">Passive intelligence, browser diagnostics and locally managed incident records.</p>
+                </div>
+                <span class="text-[10px] border border-cyber-green/50 rounded px-2 py-1 text-cyber-green">LOCAL WORKSPACE</span>
+            </div>
+            <p class="text-[10px] text-amber-300 mt-3">Important: this is a browser-based learning and monitoring workspace. It does not perform endpoint detection, packet capture, vulnerability scanning or live attack attribution.</p>
+        </section>
+
+        <!-- APEX CYBER MATRIX v8.0: SOC Lab -->
+        <section class="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6" aria-label="Version 6 security tools">
+            <article class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-cyan">
+                <div class="flex flex-wrap justify-between items-center gap-2 border-b border-cyber-border pb-2 mb-3">
+                    <div>
+                        <h2 class="text-xs font-bold tracking-widest text-cyber-cyan">IP / DOMAIN INTELLIGENCE</h2>
+                        <p class="text-[10px] text-gray-400 mt-1">Passive public-information lookup · no port scanning</p>
+                    </div>
+                    <span class="text-[10px] text-cyber-green">PUBLIC DATA</span>
+                </div>
+                <form id="ip-form" class="flex flex-col sm:flex-row gap-2">
+                    <input id="ip-query" type="text" autocomplete="off" spellcheck="false"
+                        placeholder="Enter public IP or domain (e.g. 8.8.8.8 / example.com)"
+                        class="min-w-0 flex-1 bg-cyber-dark border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green placeholder-gray-500 outline-none focus:border-cyber-cyan">
+                    <button class="px-4 py-2 border border-cyber-cyan text-cyber-cyan rounded text-xs font-bold" type="submit">LOOK UP</button>
+                </form>
+                <p id="ip-status" role="status" aria-live="polite" class="text-[10px] text-gray-400 mt-3">Enter a public IP address or domain to view public geolocation / network information.</p>
+                <div id="ip-result" class="mt-2 grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"></div>
+                <p class="text-[10px] text-gray-500 mt-3">Lookup uses ipwho.is and Google Public DNS. Results are informational, may be inaccurate, and are not a security verdict.</p>
+            </article>
+
+            <article class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box">
+                <div class="flex flex-wrap justify-between items-center gap-2 border-b border-cyber-border pb-2 mb-3">
+                    <div>
+                        <h2 class="text-xs font-bold tracking-widest text-cyber-cyan">NETWORK MONITOR</h2>
+                        <p class="text-[10px] text-gray-400 mt-1">Browser connectivity diagnostics only</p>
+                    </div>
+                    <button id="network-check" type="button" class="px-3 py-1.5 border border-cyber-green text-cyber-green rounded text-[10px] font-bold">RUN CHECK</button>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-gray-500 text-[10px]">BROWSER STATUS</div><div id="net-online" class="text-cyber-green mt-1">Checking…</div></div>
+                    <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-gray-500 text-[10px]">PUBLIC ENDPOINT</div><div id="net-endpoint" class="text-gray-300 mt-1">Not checked</div></div>
+                    <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-gray-500 text-[10px]">ROUND-TRIP</div><div id="net-latency" class="text-cyber-cyan mt-1">—</div></div>
+                    <div class="bg-cyber-dark border border-cyber-border rounded p-3"><div class="text-gray-500 text-[10px]">CONNECTION TYPE</div><div id="net-type" class="text-gray-300 mt-1">Unavailable</div></div>
+                </div>
+                <p id="net-note" class="text-[10px] text-gray-500 mt-3">This tests the browser's connection to one public HTTPS endpoint. It does not inspect your Wi-Fi, devices, or other networks.</p>
+            </article>
+
+            <article class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box lg:col-span-2">
+                <div class="flex flex-wrap justify-between items-center gap-2 border-b border-cyber-border pb-2 mb-3">
+                    <div>
+                        <h2 class="text-xs font-bold tracking-widest text-cyber-cyan">INCIDENT REGISTER</h2>
+                        <p class="text-[10px] text-gray-400 mt-1">Your local notes · stored in this browser on this device</p>
+                    </div>
+                    <div class="flex gap-2">
+                        <button id="incident-export" type="button" class="px-3 py-1.5 border border-cyber-cyan text-cyber-cyan rounded text-[10px] font-bold">EXPORT CSV</button>
+                        <button id="incident-backup" type="button" class="px-3 py-1.5 border border-cyber-green text-cyber-green rounded text-[10px] font-bold">BACKUP JSON</button>
+                        <button id="incident-import-trigger" type="button" class="px-3 py-1.5 border border-cyber-cyan text-cyber-cyan rounded text-[10px] font-bold">RESTORE JSON</button>
+                        <input id="incident-import-file" type="file" accept="application/json,.json" class="hidden">
+                        <button id="incident-clear" type="button" class="px-3 py-1.5 border border-cyber-red text-cyber-red rounded text-[10px] font-bold">CLEAR</button>
+                    </div>
+                </div>
+                <form id="incident-form" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
+                    <input id="incident-title" required maxlength="100" placeholder="Incident / observation"
+                        class="sm:col-span-2 min-w-0 bg-cyber-dark border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green placeholder-gray-500">
+                    <select id="incident-severity" class="bg-cyber-dark border border-cyber-border rounded px-2 py-2 text-xs text-cyber-green">
+                        <option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option>
+                    </select>
+                    <select id="incident-initial-status" class="bg-cyber-dark border border-cyber-border rounded px-2 py-2 text-xs text-cyber-green" aria-label="Initial incident status">
+                        <option value="Open" selected>Open</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option>
+                    </select>
+                    <button type="submit" class="border border-cyber-green text-cyber-green rounded px-3 py-2 text-xs font-bold">ADD RECORD</button>
+                    <textarea id="incident-notes" rows="2" maxlength="1000" placeholder="Notes, evidence reference, action taken (do not enter passwords or secrets)"
+                        class="sm:col-span-4 bg-cyber-dark border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green placeholder-gray-500"></textarea>
+                </form>
+                <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+                    <p id="incident-status" role="status" class="text-[10px] text-gray-300">No local records loaded.</p>
+                    <select id="incident-filter" class="bg-cyber-dark border border-cyber-border rounded px-2 py-1.5 text-[10px] text-cyber-green" aria-label="Filter incident records">
+                        <option value="All">All records</option><option value="Open">Open</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option>
+                    </select>
+                </div>
+                <div id="incident-list" class="mt-3 space-y-2 text-xs"></div>
+                <p class="text-[10px] text-gray-500 mt-3">Records stay in this browser's local storage. They are not sent to a server and may be lost if site data is cleared. Export regularly to keep a copy.</p>
+            </article>
+        </section>
+
+    </main>
+
+    <!-- Custom Popup Message Box (No alert()) -->
+    <div id="custom-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-cyber-card border border-cyber-green rounded-xl p-6 max-w-sm w-full glow-box text-center space-y-4">
+            <div class="w-10 h-10 rounded-full bg-cyber-green/20 border border-cyber-green flex items-center justify-center mx-auto text-cyber-green">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            </div>
+            <h3 class="text-base font-bold text-cyber-green tracking-wider" id="modal-title">NOTIFICATION</h3>
+            <p class="text-xs text-gray-300" id="modal-desc">Operasi berjaya dilaksanakan.</p>
+            <button onclick="closeModal()" class="w-full py-2 bg-cyber-green text-cyber-dark font-bold text-xs rounded hover:bg-emerald-400 transition">
+                ACKNOWLEDGE
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript Controller & Worldwide Database Logic -->
+    <script>
+        // Worldwide Nations Dataset grouped by Regions
+        const nations = [
+            // ASIA
+            { name: "Malaysia", code: "MY", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Singapore", code: "SG", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Indonesia", code: "ID", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Japan", code: "JP", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "South Korea", code: "KR", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "China", code: "CN", region: "ASIA", status: "MONITORED" },
+            { name: "India", code: "IN", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Thailand", code: "TH", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Vietnam", code: "VN", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Philippines", code: "PH", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Taiwan", code: "TW", region: "ASIA", status: "REFERENCE ONLY" },
+            { name: "Pakistan", code: "PK", region: "ASIA", status: "REFERENCE ONLY" },
+            // EUROPE
+            { name: "United Kingdom", code: "GB", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "Germany", code: "DE", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "France", code: "FR", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "Russia", code: "RU", region: "EUROPE", status: "MONITORED" },
+            { name: "Switzerland", code: "CH", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "Netherlands", code: "NL", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "Sweden", code: "SE", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "Italy", code: "IT", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "Spain", code: "ES", region: "EUROPE", status: "REFERENCE ONLY" },
+            { name: "Ukraine", code: "UA", region: "EUROPE", status: "REFERENCE ONLY" },
+            // AMERICAS
+            { name: "United States", code: "US", region: "AMERICAS", status: "REFERENCE ONLY" },
+            { name: "Canada", code: "CA", region: "AMERICAS", status: "REFERENCE ONLY" },
+            { name: "Brazil", code: "BR", region: "AMERICAS", status: "REFERENCE ONLY" },
+            { name: "Mexico", code: "MX", region: "AMERICAS", status: "REFERENCE ONLY" },
+            { name: "Argentina", code: "AR", region: "AMERICAS", status: "REFERENCE ONLY" },
+            { name: "Chile", code: "CL", region: "AMERICAS", status: "REFERENCE ONLY" },
+            // AFRICA
+            { name: "South Africa", code: "ZA", region: "AFRICA", status: "REFERENCE ONLY" },
+            { name: "Egypt", code: "EG", region: "AFRICA", status: "REFERENCE ONLY" },
+            { name: "Nigeria", code: "NG", region: "AFRICA", status: "REFERENCE ONLY" },
+            { name: "Kenya", code: "KE", region: "AFRICA", status: "REFERENCE ONLY" },
+            { name: "Morocco", code: "MA", region: "AFRICA", status: "REFERENCE ONLY" },
+            // OCEANIA
+            { name: "Australia", code: "AU", region: "OCEANIA", status: "REFERENCE ONLY" },
+            { name: "New Zealand", code: "NZ", region: "OCEANIA", status: "REFERENCE ONLY" },
+            { name: "Fiji", code: "FJ", region: "OCEANIA", status: "REFERENCE ONLY" }
+        ];
+
+        const nodeCoordinates = {"MY": [3.139, 101.6869], "SG": [1.3521, 103.8198], "ID": [-6.2088, 106.8456], "JP": [35.6762, 139.6503], "KR": [37.5665, 126.978], "CN": [39.9042, 116.4074], "IN": [28.6139, 77.209], "TH": [13.7563, 100.5018], "VN": [21.0278, 105.8342], "PH": [14.5995, 120.9842], "TW": [25.033, 121.5654], "PK": [33.6844, 73.0479], "GB": [51.5072, -0.1276], "DE": [52.52, 13.405], "FR": [48.8566, 2.3522], "RU": [55.7558, 37.6173], "CH": [46.948, 7.4474], "US": [38.9072, -77.0369], "CA": [45.4215, -75.6972], "BR": [-15.7939, -47.8828], "MX": [19.4326, -99.1332], "AR": [-34.6037, -58.3816], "EG": [30.0444, 31.2357], "NG": [9.0765, 7.3986], "KE": [-1.2921, 36.8219], "MA": [34.0209, -6.8416], "AU": [-35.2809, 149.13], "NZ": [-41.2865, 174.7762], "FJ": [-18.1248, 178.4501]};
+
+        const malaysiaCities = [
+            {name:"Kuala Lumpur", code:"MY-KUL", point:[3.139,101.6869], detail:"Wilayah Persekutuan Kuala Lumpur"},
+            {name:"Ipoh", code:"MY-IPH", point:[4.5975,101.0901], detail:"Perak"},
+            {name:"George Town", code:"MY-PEN", point:[5.4141,100.3288], detail:"Pulau Pinang"},
+            {name:"Johor Bahru", code:"MY-JHB", point:[1.4927,103.7414], detail:"Johor"},
+            {name:"Kuching", code:"MY-KCH", point:[1.5533,110.3592], detail:"Sarawak"},
+            {name:"Kota Kinabalu", code:"MY-BKI", point:[5.9804,116.0735], detail:"Sabah"},
+            {name:"Kuantan", code:"MY-KUA", point:[3.8077,103.326], detail:"Pahang"},
+            {name:"Alor Setar", code:"MY-AOR", point:[6.1248,100.3678], detail:"Kedah"},
+            {name:"Melaka City", code:"MY-MKZ", point:[2.1896,102.2501], detail:"Melaka"}
+        ];
+        const seAsiaCodes = ['MY','SG','ID','TH','VN','PH'];
+        let worldMap = null;
+        let mapMarkers = [];
+        function initWorldMap() {
+            if (!window.L || worldMap) return;
+            worldMap = L.map('world-map', { zoomControl:true, scrollWheelZoom:false }).setView([20, 10], 2);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                maxZoom: 18, attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+            }).addTo(worldMap);
+            updateMapNodes();
+            setTimeout(() => worldMap.invalidateSize(), 250);
+        }
+        function updateMapNodes() {
+            if (!worldMap) return;
+            mapMarkers.forEach(marker => worldMap.removeLayer(marker));
+            mapMarkers = [];
+            if (currentFilter === 'MALAYSIA') {
+                malaysiaCities.forEach(city => {
+                    const marker = L.circleMarker(city.point, {radius:8,color:'#00ff66',weight:2,fillColor:'#00ff66',fillOpacity:.65});
+                    marker.bindPopup(`<b>${city.name}</b><br>${city.detail}<br>Coordinates: ${city.point[0].toFixed(4)}, ${city.point[1].toFixed(4)}<br><small>Geographic reference point; not a live threat location.</small>`);
+                    marker.on('click', () => { appendLog(`[MAP] ${city.name}, ${city.detail} selected.`, 'text-cyber-cyan'); });
+                    marker.addTo(worldMap); mapMarkers.push(marker);
+                });
+                worldMap.fitBounds(L.latLngBounds(malaysiaCities.map(c => c.point)).pad(0.18));
+                return;
+            }
+            const visible = currentFilter === 'ALL' ? nations : currentFilter === 'SE_ASIA' ? nations.filter(n => seAsiaCodes.includes(n.code)) : nations.filter(n => n.region === currentFilter);
+            visible.forEach(n => {
+                const point = nodeCoordinates[n.code];
+                if (!point) return;
+                const marker = L.circleMarker(point, { radius:n.code==='MY'?9:6, color:n.code==='MY'?'#00ff66':'#00f0ff', weight:2, fillColor:n.code==='MY'?'#00ff66':'#00f0ff', fillOpacity:.55 });
+                marker.bindPopup(`<b>${n.name} [${n.code}]</b><br>Region: ${n.region}<br>Status: ${n.status}<br><small>Capital-city marker; not a live threat location.</small>`);
+                marker.on('click', () => inspectNation(n));
+                marker.addTo(worldMap); mapMarkers.push(marker);
+            });
+            if (currentFilter === 'SE_ASIA') worldMap.fitBounds([[ -11, 92 ], [ 23, 141 ]], {padding:[12,12]});
+            else if (currentFilter === 'ASIA') worldMap.fitBounds([[ -10, 60 ], [ 60, 150 ]], {padding:[12,12]});
+            else if (currentFilter === 'ALL') worldMap.setView([20,10],2);
+        }
+        window.addEventListener('load', () => { initWorldMap(); });
+
+        let currentFilter = 'ALL';
+
+        function renderNations() {
+            const listContainer = document.getElementById('nation-list');
+            listContainer.innerHTML = '';
+            
+            const filtered = currentFilter === 'MALAYSIA' ? [] : currentFilter === 'ALL' ? nations : currentFilter === 'SE_ASIA' ? nations.filter(n => seAsiaCodes.includes(n.code)) : nations.filter(n => n.region === currentFilter);
+            
+            filtered.forEach(n => {
+                const item = document.createElement('div');
+                item.className = 'bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition';
+                item.onclick = () => inspectNation(n);
+                item.innerHTML = `
+                    <span class="text-gray-300 font-bold">${n.name} <span class="text-[10px] text-gray-500">[${n.code}]</span></span>
+                    <span class="text-[10px] text-cyber-green">${n.status}</span>
+                `;
+                listContainer.appendChild(item);
+            });
+            if (currentFilter === 'MALAYSIA') {
+                malaysiaCities.forEach(city => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition';
+                    item.onclick = () => { worldMap && worldMap.setView(city.point, 10); appendLog(`[MAP] ${city.name} selected.`, 'text-cyber-cyan'); };
+                    item.innerHTML = `<span class="text-gray-300 font-bold">${city.name}</span><span class="text-[10px] text-cyber-green">${city.detail}</span>`;
+                    listContainer.appendChild(item);
+                });
+            }
+        }
+        renderNations();
+
+        function filterRegion(region) {
+            currentFilter = region;
+            ['ALL', 'ASIA', 'EUROPE', 'AMERICAS', 'AFRICA', 'OCEANIA', 'MALAYSIA', 'SE_ASIA'].forEach(r => {
+                const btn = document.getElementById('reg-' + r);
+                if (!btn) return;
+                btn.className = r === region ? 'py-2 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan rounded font-bold transition' : 'py-2 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition';
+            });
+            renderNations();
+            updateMapNodes();
+            const labels = {ALL:'ALL WORLD',ASIA:'ASIA',EUROPE:'EUROPE',AMERICAS:'AMERICAS',AFRICA:'AFRICA',OCEANIA:'OCEANIA',MALAYSIA:'MALAYSIA COMMAND',SE_ASIA:'SOUTHEAST ASIA COMMAND'};
+            document.getElementById('radar-target-info').innerText = `SECTOR: ${labels[region] || region} DEFENSE GRID`;
+        }
+
+        function searchMapLocation(value) {
+            const q = value.trim().toLowerCase();
+            if (!q || !worldMap) return;
+            const city = malaysiaCities.find(c => c.name.toLowerCase().includes(q));
+            if (city) {
+                filterRegion('MALAYSIA');
+                worldMap.setView(city.point, 10);
+                mapMarkers.forEach(m => { if (m.getLatLng().equals(city.point)) m.openPopup(); });
+                return;
+            }
+            const nation = nations.find(n => n.name.toLowerCase().includes(q) || n.code.toLowerCase() === q);
+            if (nation && nodeCoordinates[nation.code]) {
+                currentFilter = nation.region;
+                renderNations(); updateMapNodes();
+                worldMap.setView(nodeCoordinates[nation.code], 6);
+                const marker = mapMarkers.find(m => m.getLatLng().equals(L.latLng(nodeCoordinates[nation.code])));
+                if (marker) marker.openPopup();
+            }
+        }
+
+        function inspectNation(nation) {
+            appendLog(`[Node Inspect] Target Sector: ${nation.name} (${nation.code}) [${nation.region}] - Status: ${nation.status}`, 'text-cyber-cyan');
+            showModal("NATION NODE INSPECTED", `Nod ${nation.name} ialah titik rujukan geografi sahaja. Sistem ini tidak menerima telemetri keselamatan masa nyata daripada negara tersebut.`);
+        }
+
+        // Live Clock Generator
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('live-clock').innerText = now.toUTCString().split(' ')[4];
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Random ping fluctuation
+        setInterval(() => {
+            document.getElementById('ping-latency').innerText = (Math.floor(Math.random() * 6) + 10) + 'ms';
+        }, 3000);
+
+        // Character count updater
+        function updateCharCount() {
+            const text = document.getElementById('code-input').value;
+            document.getElementById('char-count').innerText = text.length + ' bytes';
+        }
+        updateCharCount();
+
+        // Preset Injector
+        const presets = {
+            bypass: "import apex_matrix as am\n\n# Root Firewall Bypass Script\nnode = am.connect_secure_node('GLOBAL_DEFENSE')\nnode.override_auth(token='0xDEADBEEF')\nprint('[+] Firewall bypassed successfully. Root privilege acquired.')",
+            ddos: "import fortinet_shield as fs\n\n# Scrubbing Center Activation\nfs.activate_scrubbing_cluster(rate_limit=2000000)\nfs.purge_malicious_ips(auto_quarantine=True)\nprint('[+] DDoS mitigated worldwide. Traffic normalized at 0% loss.')",
+            neural: "import neural_core as nc\n\n# Neural Network Synchronization\nsync = nc.establish_uplink(encryption='QUANTUM_256')\nsync.stream_telemetry()\nprint('[+] Neural interface synchronized with global mainframe.')",
+            override: "# Low Level Kernel Override\n.global _start\n_start:\n    mov rax, 60\n    xor rdi, rdi\n    syscall\nprint('[!] System Core Overridden. Global AI Matrix under control.')"
+        };
+
+        function injectPreset(type) {
+            document.getElementById('code-input').value = presets[type];
+            updateCharCount();
+            appendLog(`[Preset Loaded] Injected script profile: ${type.toUpperCase()}`, 'text-amber-400');
+        }
+
+        function clearConsole() {
+            document.getElementById('code-input').value = '';
+            updateCharCount();
+            appendLog('[Console Cleared] Input buffer reset.', 'text-gray-500');
+        }
+
+        function clearLogs() {
+            document.getElementById('terminal-logs').innerHTML = '<div class="text-gray-500">[Logs Cleared] Terminal buffer empty.</div>';
+        }
+
+        function appendLog(text, colorClass = 'text-gray-300') {
+            const logsContainer = document.getElementById('terminal-logs');
+            const time = new Date().toTimeString().split(' ')[0];
+            const div = document.createElement('div');
+            div.className = colorClass;
+            div.innerHTML = `[${time}] ${text}`;
+            logsContainer.appendChild(div);
+            logsContainer.scrollTop = logsContainer.scrollHeight;
+        }
+
+        // Script Execution Simulation
+        function executeCode() {
+            const code = document.getElementById('code-input').value.trim();
+            if (!code) {
+                showModal("EMPTY BUFFER", "Sila masukkan kod atau pilih preset sebelum melaksanakan arahan.");
+                return;
+            }
+
+            const executeBtn = event.target;
+            executeBtn.disabled = true;
+            
+            document.getElementById('console-status').innerText = 'EXECUTING PAYLOAD...';
+            document.getElementById('console-status').className = 'text-amber-400 font-bold animate-pulse';
+
+            const progressContainer = document.getElementById('progress-container');
+            const progressBarFill = document.getElementById('progress-bar-fill');
+            const progressPercentage = document.getElementById('progress-percentage');
+            const progressStatusText = document.getElementById('progress-status-text');
+
+            progressContainer.classList.remove('hidden');
+            progressBarFill.style.width = '0%';
+            progressPercentage.innerText = '0%';
+
+            const steps = [
+                { pct: 25, msg: "Compiling script bytecode..." },
+                { pct: 50, msg: "Broadcasting across international defense nodes..." },
+                { pct: 80, msg: "Injecting payload into core mainframe..." },
+                { pct: 100, msg: "Execution complete. Telemetry verified." }
+            ];
+
+            let currentStep = 0;
+            appendLog(`[EXEC] Executing payload (${code.length} bytes)...`, 'text-cyber-cyan');
+
+            const interval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    progressBarFill.style.width = step.pct + '%';
+                    progressPercentage.innerText = step.pct + '%';
+                    progressStatusText.innerText = step.msg;
+                    appendLog(`[PROG] ${step.msg} [${step.pct}%]`, 'text-gray-400');
+                    currentStep++;
+                } else {
+                    clearInterval(interval);
+                    document.getElementById('console-status').innerText = 'EXECUTION SUCCESS';
+                    document.getElementById('console-status').className = 'text-cyber-green font-bold';
+                    
+                    appendLog(`[SUCCESS] Payload executed successfully with root privileges across global cluster.`, 'text-cyber-green');
+                    
+                    // Increment strike counter
+                    const strikesElem = document.getElementById('counter-strikes');
+                    let currentStrikes = parseInt(strikesElem.innerText.replace(/,/g, '')) + 1;
+                    strikesElem.innerText = currentStrikes.toLocaleString();
+
+                    setTimeout(() => {
+                        progressContainer.classList.add('hidden');
+                        executeBtn.disabled = false;
+                        showModal("PAYLOAD EXECUTED", "Data entry dan skrip berjaya dijalankan merentasi nod global tanpa ralat.");
+                    }, 500);
+                }
+            }, 300);
+        }
+
+        function showModal(title, desc) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            document.getElementById('custom-modal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('custom-modal').classList.add('hidden');
+        }
+
+        // The former animated radar has been replaced by a real interactive map.
+        function triggerManualShieldPulse() {
+            appendLog('[Map] Peta interaktif dibuka. Tiada tindakan rangkaian dihantar.', 'text-cyber-cyan');
+        }
+
+        // Demo attack counters are intentionally not animated or presented as real telemetry.
+
+        // CISA KEV: public catalogue of vulnerabilities known to be exploited in the wild.
+        // This is vulnerability intelligence, not a real-time attack or incident feed.
+
+        const CISA_KEV_URL = 'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json';
+        const CISA_KEV_MIRROR_URL = 'https://raw.githubusercontent.com/cisagov/kev-data/develop/known_exploited_vulnerabilities.json';
+
+        async function fetchWithTimeout(url, ms = 12000) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), ms);
+            try { return await fetch(url, { cache: 'no-store', signal: controller.signal }); }
+            finally { clearTimeout(timer); }
+        }
+
+        async function loadKevFeed() {
+            const status = document.getElementById('kev-status');
+            const list = document.getElementById('kev-list');
+            const count = document.getElementById('kev-count');
+            const updated = document.getElementById('kev-updated');
+            const button = document.getElementById('kev-refresh');
+            if (!status || !list || !count || !updated || !button) return;
+            button.disabled = true;
+            button.textContent = 'LOADING…';
+            status.textContent = 'Connecting to public CISA KEV catalogue…';
+            status.className = 'text-[10px] text-amber-400 mb-2';
+            let lastError = 'No source available';
+            let data = null;
+            let sourceLabel = '';
+            for (const source of [
+                { url: CISA_KEV_MIRROR_URL, label: 'CISA-maintained GitHub data mirror' },
+                { url: CISA_KEV_URL, label: 'CISA official website' }
+            ]) {
+                try {
+                    const response = await fetchWithTimeout(source.url);
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    const candidate = await response.json();
+                    if (!Array.isArray(candidate.vulnerabilities)) throw new Error('Invalid catalogue format');
+                    data = candidate; sourceLabel = source.label; break;
+                } catch (error) { lastError = error.name === 'AbortError' ? 'Request timed out' : error.message; }
+            }
+            try {
+                if (!data) throw new Error(lastError);
+                const entries = [...data.vulnerabilities]
+                    .sort((a,b) => (b.dateAdded || '').localeCompare(a.dateAdded || '')).slice(0, 12);
+                count.textContent = Number(data.count || data.vulnerabilities.length).toLocaleString();
+                updated.textContent = new Date().toLocaleString();
+                list.replaceChildren();
+                entries.forEach(item => {
+                    const card = document.createElement('article');
+                    card.className = 'border-b border-cyber-border pb-3 last:border-0';
+                    const heading = document.createElement('div');
+                    heading.className = 'flex flex-wrap justify-between gap-2';
+                    const cve = document.createElement('strong');
+                    cve.className = 'text-cyber-cyan'; cve.textContent = item.cveID || 'CVE not specified';
+                    const date = document.createElement('span');
+                    date.className = 'text-gray-500'; date.textContent = 'Added: ' + (item.dateAdded || 'Date unavailable');
+                    heading.append(cve, date);
+                    const title = document.createElement('p');
+                    title.className = 'text-gray-200 mt-1 font-bold';
+                    title.textContent = [item.vendorProject, item.product].filter(Boolean).join(' · ') || item.vulnerabilityName || 'Known exploited vulnerability';
+                    const desc = document.createElement('p');
+                    desc.className = 'text-gray-400 mt-1 leading-relaxed';
+                    desc.textContent = item.shortDescription || item.vulnerabilityName || 'No description supplied.';
+                    const action = document.createElement('p');
+                    action.className = 'text-amber-400 mt-1';
+                    action.textContent = 'Required action: ' + (item.requiredAction || 'Review vendor guidance and apply mitigations.');
+                    const meta = document.createElement('p');
+                    meta.className = 'text-gray-500 mt-1';
+                    meta.textContent = 'CISA due date: ' + (item.dueDate || 'Not specified') + (item.knownRansomwareCampaignUse === 'Known' ? ' · Known ransomware use' : '');
+                    card.append(heading, title, desc, action, meta); list.appendChild(card);
+                });
+                status.textContent = 'Catalogue loaded · ' + sourceLabel + ' · Published: ' + (data.dateReleased || 'date not supplied');
+                status.className = 'text-[10px] text-cyber-green mb-2';
+            } catch (error) {
+                count.textContent = '—'; updated.textContent = 'Not loaded';
+                status.textContent = 'Feed unavailable: ' + error.message + '. No sample data is displayed.';
+                status.className = 'text-[10px] text-amber-400 mb-2';
+                list.replaceChildren();
+                const message = document.createElement('p');
+                message.className = 'text-gray-400';
+                message.textContent = 'This browser could not reach either public catalogue source. Open the official CISA source link below or try again later.';
+                list.appendChild(message);
+            } finally {
+                button.disabled = false; button.textContent = 'REFRESH FEED';
+            }
+        }
+
+        // IP / domain lookup: passive public data only; never scans ports or sends probes to a target.
+        const ipForm = document.getElementById('ip-form');
+        if (ipForm) ipForm.addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const input = document.getElementById('ip-query').value.trim();
+            const status = document.getElementById('ip-status');
+            const result = document.getElementById('ip-result');
+            result.replaceChildren();
+            if (!input || input.length > 253) { status.textContent = 'Enter a valid public IP address or domain.'; return; }
+            status.textContent = 'Looking up public information…';
+            try {
+                let ip = input;
+                const looksLikeIP = /^[0-9a-fA-F:.]+$/.test(input);
+                if (!looksLikeIP) {
+                    const domain = input.replace(/^https?:\/\//i, '').split('/')[0].replace(/\.$/, '');
+                    if (!/^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i.test(domain)) throw new Error('Domain format is not valid.');
+                    const dns = await fetchWithTimeout('https://dns.google/resolve?name=' + encodeURIComponent(domain) + '&type=A');
+                    if (!dns.ok) throw new Error('DNS lookup failed (HTTP ' + dns.status + ').');
+                    const dnsData = await dns.json();
+                    const answer = (dnsData.Answer || []).find(a => a.type === 1);
+                    if (!answer) throw new Error('No public IPv4 address was returned for this domain.');
+                    ip = answer.data;
+                }
+                const response = await fetchWithTimeout('https://ipwho.is/' + encodeURIComponent(ip));
+                if (!response.ok) throw new Error('IP information service returned HTTP ' + response.status + '.');
+                const data = await response.json();
+                if (data.success === false) throw new Error(data.message || 'Lookup was not successful.');
+                const fields = [
+                    ['IP address', data.ip], ['Country', data.country], ['Region', data.region],
+                    ['City', data.city], ['Organisation / ISP', data.connection && (data.connection.org || data.connection.isp)],
+                    ['ASN', data.connection && data.connection.asn], ['Timezone', data.timezone && data.timezone.id],
+                    ['Coordinates', data.latitude != null ? data.latitude + ', ' + data.longitude : 'Not supplied']
+                ];
+                fields.forEach(([label, value]) => {
+                    if (value === undefined || value === null || value === '') return;
+                    const box = document.createElement('div');
+                    box.className = 'bg-cyber-dark border border-cyber-border rounded p-2';
+                    const k = document.createElement('div'); k.className = 'text-gray-500 text-[10px]'; k.textContent = label;
+                    const v = document.createElement('div'); v.className = 'text-cyber-green mt-1 break-words'; v.textContent = String(value);
+                    box.append(k, v); result.appendChild(box);
+                });
+                status.textContent = 'Public lookup completed. This is not a maliciousness / reputation verdict.';
+                status.className = 'text-[10px] text-cyber-green mt-3';
+                appendLog('[IP INTEL] Passive public lookup completed for ' + input + '.', 'text-cyber-cyan');
+            } catch (error) {
+                status.textContent = 'Lookup unavailable: ' + error.message;
+                status.className = 'text-[10px] text-amber-400 mt-3';
+            }
+        });
+
+        // Browser network diagnostics; one harmless HTTPS request to a public static file.
+        async function runNetworkCheck() {
+            const online = document.getElementById('net-online');
+            const endpoint = document.getElementById('net-endpoint');
+            const latency = document.getElementById('net-latency');
+            const type = document.getElementById('net-type');
+            const note = document.getElementById('net-note');
+            online.textContent = navigator.onLine ? 'ONLINE (browser)' : 'OFFLINE';
+            online.className = navigator.onLine ? 'text-cyber-green mt-1' : 'text-cyber-red mt-1';
+            const conn = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            type.textContent = conn ? [conn.effectiveType, conn.downlink ? conn.downlink + ' Mbps' : ''].filter(Boolean).join(' · ') : 'Not exposed by iOS Safari';
+            endpoint.textContent = 'Testing…'; latency.textContent = '—';
+            const t0 = performance.now();
+            try {
+                const response = await fetchWithTimeout('https://raw.githubusercontent.com/cisagov/kev-data/develop/README.md', 10000);
+                if (!response.ok) throw new Error('HTTP ' + response.status);
+                const ms = Math.round(performance.now() - t0);
+                endpoint.textContent = 'Reachable'; latency.textContent = ms + ' ms';
+                note.textContent = 'HTTPS endpoint reachable from this browser. This is not a full network or device security scan.';
+            } catch (error) {
+                endpoint.textContent = 'Unavailable'; latency.textContent = 'Timeout / blocked';
+                note.textContent = 'Could not reach the test endpoint. Check mobile data / Wi-Fi, content blockers, or try again later.';
+            }
+        }
+        const networkButton = document.getElementById('network-check');
+        if (networkButton) networkButton.addEventListener('click', runNetworkCheck);
+        runNetworkCheck();
+
+        // Incident records are stored locally on this device/browser only.
+        // Existing v6 records are retained; records without a status are treated as Open.
+        const INCIDENT_KEY = 'apexCyberMatrixIncidentsV6';
+        function readIncidents() {
+            try {
+                const value = JSON.parse(localStorage.getItem(INCIDENT_KEY) || '[]');
+                return Array.isArray(value) ? value.map((r, i) => ({
+                    id: r.id || ('legacy-' + i + '-' + String(r.createdAt || '')),
+                    title: String(r.title || 'Untitled record'),
+                    severity: ['Low','Medium','High','Critical'].includes(r.severity) ? r.severity : 'Medium',
+                    status: ['Open','Investigating','Resolved'].includes(r.status) ? r.status : 'Open',
+                    notes: String(r.notes || ''),
+                    createdAt: r.createdAt || new Date().toISOString()
+                })) : [];
+            } catch (_) { return []; }
+        }
+        function saveIncidents(records) {
+            localStorage.setItem(INCIDENT_KEY, JSON.stringify(records));
+        }
+        function renderIncidents() {
+            const list = document.getElementById('incident-list');
+            const status = document.getElementById('incident-status');
+            if (!list || !status) return;
+            const records = readIncidents();
+            const counts = {
+                Open: records.filter(r => r.status === 'Open').length,
+                Investigating: records.filter(r => r.status === 'Investigating').length,
+                Resolved: records.filter(r => r.status === 'Resolved').length
+            };
+            const filter = document.getElementById('incident-filter');
+            const selected = filter ? filter.value : 'All';
+            const shown = records.slice().reverse().filter(r => selected === 'All' || r.status === selected);
+            status.textContent = records.length + ' total · ' + counts.Open + ' open · ' + counts.Investigating + ' investigating · ' + counts.Resolved + ' resolved';
+            list.replaceChildren();
+            if (!shown.length) {
+                const empty = document.createElement('p');
+                empty.className = 'text-gray-400 border border-cyber-border rounded p-3';
+                empty.textContent = 'No records match this filter yet.';
+                list.appendChild(empty);
+            }
+            shown.forEach(record => {
+                const card = document.createElement('div');
+                card.className = 'bg-cyber-dark border border-cyber-border rounded p-3';
+                const top = document.createElement('div'); top.className = 'flex flex-wrap justify-between gap-2 items-start';
+                const title = document.createElement('strong'); title.className = 'text-cyber-cyan break-words'; title.textContent = record.title;
+                const meta = document.createElement('span'); meta.className = 'text-gray-300'; meta.textContent = record.severity + ' · ' + record.status + ' · ' + new Date(record.createdAt).toLocaleString();
+                const notes = document.createElement('p'); notes.className = 'text-gray-300 mt-2 whitespace-pre-wrap break-words'; notes.textContent = record.notes || 'No notes';
+                const actions = document.createElement('div'); actions.className = 'flex flex-wrap gap-2 mt-3';
+                const state = document.createElement('select');
+                state.className = 'bg-cyber-card border border-cyber-border rounded px-2 py-1.5 text-[10px] text-cyber-green';
+                state.setAttribute('aria-label', 'Update status for ' + record.title);
+                ['Open','Investigating','Resolved'].forEach(value => {
+                    const option = document.createElement('option'); option.value = value; option.textContent = value;
+                    if (value === record.status) option.selected = true;
+                    state.appendChild(option);
+                });
+                state.addEventListener('change', () => {
+                    const all = readIncidents(); const item = all.find(r => r.id === record.id);
+                    if (item) { item.status = state.value; saveIncidents(all); renderIncidents(); }
+                });
+                const remove = document.createElement('button');
+                remove.type = 'button'; remove.className = 'border border-cyber-red/70 text-red-300 rounded px-2 py-1.5 text-[10px]';
+                remove.textContent = 'DELETE';
+                remove.addEventListener('click', () => {
+                    if (!confirm('Delete this incident record from this device?')) return;
+                    saveIncidents(readIncidents().filter(r => r.id !== record.id)); renderIncidents();
+                });
+                actions.append(state, remove);
+                top.append(title, meta); card.append(top, notes, actions); list.appendChild(card);
+            });
+        }
+        const incidentForm = document.getElementById('incident-form');
+        if (incidentForm) incidentForm.addEventListener('submit', event => {
+            event.preventDefault();
+            const title = document.getElementById('incident-title').value.trim();
+            if (!title) return;
+            const records = readIncidents();
+            records.push({
+                id: 'inc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+                title,
+                severity: document.getElementById('incident-severity').value,
+                status: document.getElementById('incident-initial-status').value,
+                notes: document.getElementById('incident-notes').value.trim(),
+                createdAt: new Date().toISOString()
+            });
+            try {
+                saveIncidents(records);
+                incidentForm.reset();
+                document.getElementById('incident-initial-status').value = 'Open';
+                renderIncidents();
+            } catch (_) {
+                document.getElementById('incident-status').textContent = 'Storage unavailable in this browser session. Export or use another browser mode.';
+            }
+        });
+        const incidentFilter = document.getElementById('incident-filter');
+        if (incidentFilter) incidentFilter.addEventListener('change', renderIncidents);
+        const exportButton = document.getElementById('incident-export');
+        if (exportButton) exportButton.addEventListener('click', () => {
+            const rows = [['Date','Title','Severity','Status','Notes'], ...readIncidents().map(r => [r.createdAt,r.title,r.severity,r.status,r.notes])];
+            const csv = rows.map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(',')).join('\r\n');
+            const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
+            const url = URL.createObjectURL(blob); const a = document.createElement('a');
+            a.href = url; a.download = 'apex-cyber-matrix-incidents-v7.csv'; a.click(); URL.revokeObjectURL(url);
+        });
+        const clearButton = document.getElementById('incident-clear');
+        if (clearButton) clearButton.addEventListener('click', () => {
+            if (!confirm('Clear all locally stored incident records on this browser?')) return;
+            localStorage.removeItem(INCIDENT_KEY); renderIncidents();
+        });
+
+        // Portable JSON backup / restore for incident records on iPhone and desktop.
+        function downloadTextFile(filename, content, mime) {
+            const blob = new Blob([content], { type: mime });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url; a.download = filename; document.body.appendChild(a);
+            a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        const backupButton = document.getElementById('incident-backup');
+        if (backupButton) backupButton.addEventListener('click', () => {
+            const payload = {
+                app: 'APEX CYBER MATRIX',
+                formatVersion: 1,
+                exportedAt: new Date().toISOString(),
+                incidents: readIncidents()
+            };
+            downloadTextFile('apex-cyber-matrix-backup.json', JSON.stringify(payload, null, 2), 'application/json');
+        });
+        const importTrigger = document.getElementById('incident-import-trigger');
+        const importFile = document.getElementById('incident-import-file');
+        if (importTrigger && importFile) {
+            importTrigger.addEventListener('click', () => importFile.click());
+            importFile.addEventListener('change', async () => {
+                const file = importFile.files && importFile.files[0];
+                if (!file) return;
+                try {
+                    if (file.size > 2 * 1024 * 1024) throw new Error('Backup file is larger than 2 MB.');
+                    const parsed = JSON.parse(await file.text());
+                    const incoming = Array.isArray(parsed) ? parsed : parsed.incidents;
+                    if (!Array.isArray(incoming)) throw new Error('This JSON does not contain an incidents list.');
+                    const clean = incoming.slice(0, 5000).map((r, i) => ({
+                        id: String(r.id || ('restored-' + Date.now() + '-' + i)),
+                        title: String(r.title || 'Untitled record').slice(0, 100),
+                        severity: ['Low','Medium','High','Critical'].includes(r.severity) ? r.severity : 'Medium',
+                        status: ['Open','Investigating','Resolved'].includes(r.status) ? r.status : 'Open',
+                        notes: String(r.notes || '').slice(0, 1000),
+                        createdAt: r.createdAt || new Date().toISOString()
+                    }));
+                    const existing = readIncidents();
+                    const replace = confirm('Press OK to REPLACE current local records with ' + clean.length + ' imported record(s). Press Cancel to MERGE without duplicate IDs.');
+                    let merged;
+                    if (replace) merged = clean;
+                    else {
+                        const ids = new Set(existing.map(r => r.id));
+                        merged = existing.concat(clean.filter(r => !ids.has(r.id)));
+                    }
+                    saveIncidents(merged);
+                    renderIncidents();
+                    const message = document.getElementById('incident-status');
+                    if (message) message.textContent = 'Restore successful · ' + merged.length + ' local record(s).';
+                } catch (error) {
+                    const message = document.getElementById('incident-status');
+                    if (message) message.textContent = 'Restore failed: ' + error.message;
+                } finally {
+                    importFile.value = '';
+                }
+            });
+        }
+        renderIncidents();
+
+        window.addEventListener('load', () => { loadKevFeed(); });
+
+
+        // APEX v8.0 SOC Lab: safe local defensive training scenarios only.
+        (function initApexSocLab() {
+            const storageKey = 'apex_soc_lab_events_v8';
+            const scenarios = {
+                phishing: { title: 'Phishing email reported', severity: 'High', detail: 'Training alert: user reported a suspicious email attachment or link. Validate sender, headers and URL using approved tools; do not open the attachment.' },
+                malware: { title: 'Endpoint malware alert', severity: 'Critical', detail: 'Training alert: endpoint protection reported a suspicious file. Preserve alert evidence and follow the organisation’s authorised isolation procedure.' },
+                login: { title: 'Repeated failed login attempts', severity: 'Medium', detail: 'Training alert: multiple failed sign-in attempts observed in a sample log. Check account owner, source context and MFA status.' },
+                web: { title: 'Suspicious web request', severity: 'Medium', detail: 'Training alert: sample web log contains an unusual request pattern. Review application logs and validate whether the request was blocked.' },
+                data: { title: 'Unusual data transfer alert', severity: 'High', detail: 'Training alert: sample telemetry indicates an unusual outbound transfer. Verify business purpose, destination and data classification.' }
+            };
+            let events = [];
+            try { events = JSON.parse(localStorage.getItem(storageKey) || '[]'); if (!Array.isArray(events)) events = []; } catch (_) { events = []; }
+
+            const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+            function save() { try { localStorage.setItem(storageKey, JSON.stringify(events)); } catch (_) {} }
+            function render() {
+                const queue = document.getElementById('soc-lab-events');
+                if (!queue) return;
+                const open = events.filter(e => e.status !== 'Resolved').length;
+                const high = events.filter(e => ['High','Critical'].includes(e.severity) && e.status !== 'Resolved').length;
+                document.getElementById('soc-event-count').textContent = events.length;
+                document.getElementById('soc-open-count').textContent = open;
+                document.getElementById('soc-high-count').textContent = high;
+                if (!events.length) {
+                    queue.innerHTML = '<p class="text-gray-500">No lab events yet. Create a scenario to practise triage and response.</p>';
+                    return;
+                }
+                queue.innerHTML = events.slice().reverse().map(e => `
+                    <article class="border border-cyber-border rounded p-2">
+                        <div class="flex flex-wrap justify-between gap-2">
+                            <b class="text-cyber-green">${esc(e.title)}</b>
+                            <span class="${e.severity === 'Critical' ? 'text-red-400' : e.severity === 'High' ? 'text-amber-300' : 'text-cyber-cyan'}">${esc(e.severity)} · ${esc(e.status)}</span>
+                        </div>
+                        <p class="text-gray-400 mt-1">${esc(e.detail)}</p>
+                        <p class="text-gray-500 mt-1">${esc(e.time)} · LAB TRAINING DATA</p>
+                        <div class="flex flex-wrap gap-2 mt-2">
+                            <button type="button" data-id="${esc(e.id)}" data-status="Investigating" class="soc-status border border-cyber-cyan text-cyber-cyan rounded px-2 py-1">INVESTIGATING</button>
+                            <button type="button" data-id="${esc(e.id)}" data-status="Contained" class="soc-status border border-amber-300 text-amber-300 rounded px-2 py-1">CONTAINED</button>
+                            <button type="button" data-id="${esc(e.id)}" data-status="Resolved" class="soc-status border border-cyber-green text-cyber-green rounded px-2 py-1">RESOLVED</button>
+                        </div>
+                    </article>`).join('');
+                queue.querySelectorAll('.soc-status').forEach(button => button.addEventListener('click', () => {
+                    const item = events.find(e => e.id === button.dataset.id);
+                    if (item) { item.status = button.dataset.status; save(); render(); }
+                }));
+            }
+            document.getElementById('soc-run-scenario')?.addEventListener('click', () => {
+                const key = document.getElementById('soc-scenario').value;
+                const scenario = scenarios[key];
+                events.push({
+                    id: 'LAB-' + Date.now().toString(36).toUpperCase(),
+                    title: scenario.title,
+                    severity: scenario.severity,
+                    detail: scenario.detail,
+                    status: 'Open',
+                    time: new Date().toLocaleString()
+                });
+                save(); render();
+                document.getElementById('soc-scenario-status').textContent = 'Lab event created. Review it in the SOC Lab Event Queue.';
+                if (typeof appendLog === 'function') appendLog('[SOC LAB] Training event created: ' + scenario.title, 'text-cyber-cyan');
+            });
+            document.getElementById('soc-clear-lab')?.addEventListener('click', () => {
+                if (!confirm('Clear all local SOC Lab training events?')) return;
+                events = []; save(); render();
+                document.getElementById('soc-scenario-status').textContent = 'SOC Lab event queue cleared.';
+            });
+            render();
+        })();
+
+        // Download Dashboard File Functionality
+        function downloadDashboardFile() {
+            const htmlContent = document.documentElement.outerHTML;
+            const blob = new Blob([htmlContent], { type: 'text/html' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'APEX_CYBER_MATRIX_v7.1.html';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            appendLog('[Download] Dashboard HTML file successfully exported.', 'text-cyber-green');
+            showModal("FILE DOWNLOADED", "Fail kod sumber HTML papan pemuka berjaya dimuat turun ke peranti anda.");
+        }
+    </script>
+
+</body></html>
