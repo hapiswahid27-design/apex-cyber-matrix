@@ -433,14 +433,38 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
                     </div>
                 </section>
             </div>
+
+            <!-- v7.2 live threat intelligence feed -->
+            <section class="bg-cyber-card border border-cyber-red/40 rounded-xl p-4 glow-box mt-4" aria-labelledby="live-threat-title">
+                <div class="flex flex-wrap justify-between items-center gap-2 border-b border-cyber-border pb-2 mb-3">
+                    <div>
+                        <h2 id="live-threat-title" class="text-xs font-bold tracking-widest text-red-400 uppercase">LIVE GLOBAL THREAT INTELLIGENCE</h2>
+                        <p class="text-[10px] text-gray-400 mt-1">URLhaus recent malicious URL reports · public threat indicators</p>
+                    </div>
+                    <button id="live-threat-refresh" type="button" onclick="loadLiveThreatFeed()" class="px-3 py-1.5 border border-red-400 text-red-300 rounded text-[10px] font-bold">REFRESH LIVE FEED</button>
+                </div>
+                <div class="grid grid-cols-2 md:grid-cols-3 gap-2 mb-3 text-[10px]">
+                    <div class="bg-cyber-dark border border-cyber-border rounded p-2"><div class="text-gray-500">REPORTS LOADED</div><div id="live-threat-count" class="text-red-300 text-lg font-bold">—</div></div>
+                    <div class="bg-cyber-dark border border-cyber-border rounded p-2"><div class="text-gray-500">LAST UPDATE</div><div id="live-threat-updated" class="text-cyber-green text-xs">Not loaded</div></div>
+                    <div class="bg-cyber-dark border border-cyber-border rounded p-2 col-span-2 md:col-span-1"><div class="text-gray-500">MAP LOCATIONS</div><div id="live-threat-mapped" class="text-cyan-300 text-lg font-bold">0</div></div>
+                </div>
+                <div id="live-threat-status" role="status" aria-live="polite" class="text-[10px] text-amber-400 mb-2">Waiting for public URLhaus feed…</div>
+                <div id="live-threat-list" class="bg-cyber-dark border border-cyber-border rounded-lg p-3 max-h-80 overflow-y-auto space-y-3 text-[11px]">
+                    <p class="text-gray-400">Press REFRESH LIVE FEED to retrieve recent public malware URL reports.</p>
+                </div>
+                <div class="mt-3 text-[10px] text-gray-500 leading-relaxed">
+                    Data source: <a class="text-cyan-300 underline" href="https://urlhaus.abuse.ch/" target="_blank" rel="noopener noreferrer">URLhaus by abuse.ch</a>.
+                    Map pins, when available, show the approximate hosting-server location of a reported malicious URL — not the attacker’s identity or exact attack origin. Feed refreshes automatically every 5 minutes while this page remains open.
+                </div>
+            </section>
         </div>
 
 
-        <!-- v7.1 SOC workflow overview -->
+        <!-- v7.2 SOC workflow overview -->
         <section class="lg:col-span-3 bg-cyber-card border border-cyber-cyan/40 rounded-xl p-4 mb-1">
             <div class="flex flex-wrap items-center justify-between gap-2">
                 <div>
-                    <h2 class="text-xs font-bold tracking-widest text-cyber-cyan">SOC WORKSPACE // V7.0</h2>
+                    <h2 class="text-xs font-bold tracking-widest text-cyber-cyan">SOC WORKSPACE // V7.2</h2>
                     <p class="text-[10px] text-gray-300 mt-1">Passive intelligence, browser diagnostics and locally managed incident records.</p>
                 </div>
                 <span class="text-[10px] border border-cyber-green/50 rounded px-2 py-1 text-cyber-green">LOCAL WORKSPACE</span>
@@ -1178,6 +1202,121 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
 
         window.addEventListener('load', () => { loadKevFeed(); });
 
+        // v7.2: public URLhaus recent malware URL feed and approximate host geolocation.
+        // This is passive threat-intelligence data; it does not scan or contact listed hosts.
+        let liveThreatMarkers = [];
+        let liveThreatRefreshTimer = null;
+
+        function parseThreatCsvLine(line) {
+            const out = []; let value = ''; let quoted = false;
+            for (let i = 0; i < line.length; i++) {
+                const ch = line[i];
+                if (ch === '"') {
+                    if (quoted && line[i + 1] === '"') { value += '"'; i++; }
+                    else quoted = !quoted;
+                } else if (ch === ',' && !quoted) { out.push(value); value = ''; }
+                else value += ch;
+            }
+            out.push(value);
+            return out;
+        }
+
+        async function resolveThreatHost(host) {
+            try {
+                const dns = await fetchWithTimeout('https://dns.google/resolve?name=' + encodeURIComponent(host) + '&type=A', 8000);
+                if (!dns.ok) return null;
+                const data = await dns.json();
+                const answer = (data.Answer || []).find(a => a.type === 1 && /^\\d{1,3}(\\.\\d{1,3}){3}$/.test(a.data));
+                if (!answer) return null;
+                const geo = await fetchWithTimeout('https://ipwho.is/' + encodeURIComponent(answer.data), 8000);
+                if (!geo.ok) return null;
+                const place = await geo.json();
+                if (!place.success || !Number.isFinite(Number(place.latitude)) || !Number.isFinite(Number(place.longitude))) return null;
+                return { ip: answer.data, lat: Number(place.latitude), lon: Number(place.longitude), city: place.city || '', country: place.country || 'Unknown' };
+            } catch (_) { return null; }
+        }
+
+        function clearLiveThreatMarkers() {
+            if (!worldMap) return;
+            liveThreatMarkers.forEach(marker => worldMap.removeLayer(marker));
+            liveThreatMarkers = [];
+        }
+
+        async function loadLiveThreatFeed() {
+            const status = document.getElementById('live-threat-status');
+            const list = document.getElementById('live-threat-list');
+            const count = document.getElementById('live-threat-count');
+            const updated = document.getElementById('live-threat-updated');
+            const mapped = document.getElementById('live-threat-mapped');
+            const button = document.getElementById('live-threat-refresh');
+            if (!status || !list || !button) return;
+            button.disabled = true; button.textContent = 'LOADING…';
+            status.textContent = 'Connecting to the public URLhaus recent-report feed…';
+            status.className = 'text-[10px] text-amber-400 mb-2';
+            try {
+                const response = await fetchWithTimeout('https://urlhaus.abuse.ch/downloads/csv_recent/', 15000);
+                if (!response.ok) throw new Error('URLhaus HTTP ' + response.status);
+                const csv = await response.text();
+                const lines = csv.split(/\\r?\\n/).filter(line => line && !line.startsWith('#'));
+                const rows = lines.slice(0, 13).map(parseThreatCsvLine).filter(row => row.length >= 6);
+                if (!rows.length) throw new Error('No report rows received or feed format changed');
+                list.replaceChildren();
+                clearLiveThreatMarkers();
+                const records = rows.slice(0, 12);
+                let mappedCount = 0;
+                for (const row of records) {
+                    const [id, dateAdded, url, urlStatus, lastOnline, threat, tags, reportLink, reporter] = row;
+                    let host = '';
+                    try { host = new URL(url).hostname; } catch (_) {}
+                    const card = document.createElement('article');
+                    card.className = 'border-b border-cyber-border pb-3 last:border-0';
+                    const top = document.createElement('div'); top.className = 'flex flex-wrap justify-between gap-2';
+                    const heading = document.createElement('strong'); heading.className = 'text-red-300'; heading.textContent = '#' + (id || 'Report');
+                    const date = document.createElement('span'); date.className = 'text-gray-500'; date.textContent = 'Reported: ' + (dateAdded || 'Date unavailable');
+                    top.append(heading, date);
+                    const threatText = document.createElement('p'); threatText.className = 'text-gray-200 mt-1 font-bold'; threatText.textContent = threat || 'Malware URL report';
+                    const hostText = document.createElement('p'); hostText.className = 'text-cyan-300 mt-1 break-all'; hostText.textContent = 'Host: ' + (host || 'Unavailable');
+                    const meta = document.createElement('p'); meta.className = 'text-gray-400 mt-1'; meta.textContent = 'Status: ' + (urlStatus || 'Unknown') + ' · Tags: ' + (tags || 'None listed');
+                    const geoText = document.createElement('p'); geoText.className = 'text-gray-500 mt-1'; geoText.textContent = 'Resolving approximate hosting location…';
+                    card.append(top, threatText, hostText, meta, geoText); list.appendChild(card);
+                    if (host) {
+                        const geo = await resolveThreatHost(host);
+                        if (geo) {
+                            mappedCount++;
+                            geoText.textContent = 'Approx. host location: ' + [geo.city, geo.country].filter(Boolean).join(', ') + ' · IP ' + geo.ip;
+                            if (worldMap && window.L) {
+                                const marker = L.circleMarker([geo.lat, geo.lon], { radius:7, color:'#ff3355', weight:2, fillColor:'#ff1744', fillOpacity:.8 });
+                                marker.bindPopup('<b>URLhaus malicious URL report</b><br>Report #' + String(id).replace(/[<>]/g,'') + '<br>Threat: ' + String(threat || 'Unknown').replace(/[<>]/g,'') + '<br>Host: ' + String(host).replace(/[<>]/g,'') + '<br>Approx. hosting location: ' + String([geo.city,geo.country].filter(Boolean).join(', ')).replace(/[<>]/g,'') + '<br><small>This is hosting infrastructure geolocation, not attacker attribution.</small>');
+                                marker.addTo(worldMap); liveThreatMarkers.push(marker);
+                            }
+                        } else geoText.textContent = 'Map location unavailable for this host.';
+                    } else geoText.textContent = 'Host could not be parsed; no map location.';
+                }
+                count.textContent = String(records.length);
+                mapped.textContent = String(mappedCount);
+                updated.textContent = new Date().toLocaleString();
+                status.textContent = 'Live public reports loaded from URLhaus · ' + records.length + ' recent entries · ' + mappedCount + ' approximate host locations mapped.';
+                status.className = 'text-[10px] text-cyber-green mb-2';
+                appendLog('[LIVE THREAT] URLhaus feed updated: ' + records.length + ' reports; ' + mappedCount + ' host locations.', 'text-cyber-cyan');
+            } catch (error) {
+                status.textContent = 'Live feed unavailable: ' + error.message + '. This may be a network or browser CORS restriction; no sample attacks are shown.';
+                status.className = 'text-[10px] text-amber-400 mb-2';
+                list.replaceChildren();
+                const message = document.createElement('p'); message.className = 'text-gray-400';
+                message.textContent = 'Could not retrieve URLhaus data in this browser. Try REFRESH LIVE FEED later or open the URLhaus source website directly.';
+                list.appendChild(message);
+                count.textContent = '—'; mapped.textContent = '0'; updated.textContent = 'Not loaded';
+            } finally {
+                button.disabled = false; button.textContent = 'REFRESH LIVE FEED';
+            }
+        }
+
+        window.addEventListener('load', () => {
+            loadLiveThreatFeed();
+            if (liveThreatRefreshTimer) clearInterval(liveThreatRefreshTimer);
+            liveThreatRefreshTimer = setInterval(loadLiveThreatFeed, 5 * 60 * 1000);
+        });
+
         // Download Dashboard File Functionality
         function downloadDashboardFile() {
             const htmlContent = document.documentElement.outerHTML;
@@ -1185,7 +1324,7 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'APEX_CYBER_MATRIX_v7.1.html';
+            a.download = 'APEX_CYBER_MATRIX_v7.2.html';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
