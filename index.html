@@ -144,6 +144,16 @@
                     <button onclick="filterRegion('OCEANIA')" id="reg-OCEANIA" class="py-1 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition">Oceania</button>
                 </div>
 
+                <!-- Malaysia / Southeast Asia command shortcuts -->
+                <div class="grid grid-cols-2 gap-1.5 mb-3 text-[11px]">
+                    <button onclick="filterRegion('MALAYSIA')" id="reg-MALAYSIA" class="py-2 bg-cyber-dark border border-cyber-green/60 text-cyber-green rounded font-bold transition">🇲🇾 Malaysia Command</button>
+                    <button onclick="filterRegion('SE_ASIA')" id="reg-SE_ASIA" class="py-2 bg-cyber-dark border border-cyber-cyan/60 text-cyber-cyan rounded font-bold transition">🌏 Asia Command</button>
+                </div>
+                <div class="mb-3">
+                    <input id="map-search" type="search" oninput="searchMapLocation(this.value)" placeholder="Search country or city..." aria-label="Search country or city" class="w-full bg-cyber-dark border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green placeholder-gray-500 outline-none focus:border-cyber-cyan">
+                    <div class="flex justify-end mt-1"><button onclick="filterRegion('ALL')" class="text-[10px] text-cyber-cyan underline">Reset to World Map</button></div>
+                </div>
+
                 <!-- Interactive Canvas Radar -->
                 <div class="relative w-full bg-cyber-dark border border-cyber-border rounded-lg overflow-hidden p-1">
                     <div id="world-map" role="application" aria-label="Interactive world map"></div>
@@ -152,7 +162,7 @@
                         <span class="text-cyber-green font-bold">MAP: OPENSTREETMAP</span>
                     </div>
                 </div>
-                <p class="text-[10px] text-gray-400 mt-2 text-center">Peta interaktif sebenar: zum, gerakkan peta dan pilih nod negara. Data ancaman langsung belum disambungkan.</p>
+                <p class="text-[10px] text-gray-400 mt-2 text-center">Peta interaktif sebenar: zum, gerakkan peta, pilih nod negara atau cari bandar. Penanda ialah lokasi geografi; data ancaman langsung belum disambungkan.</p>
             </div>
 
             <!-- Worldwide Nation Nodes Directory (Clickable) -->
@@ -482,6 +492,18 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
 
         const nodeCoordinates = {"MY": [3.139, 101.6869], "SG": [1.3521, 103.8198], "ID": [-6.2088, 106.8456], "JP": [35.6762, 139.6503], "KR": [37.5665, 126.978], "CN": [39.9042, 116.4074], "IN": [28.6139, 77.209], "TH": [13.7563, 100.5018], "VN": [21.0278, 105.8342], "PH": [14.5995, 120.9842], "TW": [25.033, 121.5654], "PK": [33.6844, 73.0479], "GB": [51.5072, -0.1276], "DE": [52.52, 13.405], "FR": [48.8566, 2.3522], "RU": [55.7558, 37.6173], "CH": [46.948, 7.4474], "US": [38.9072, -77.0369], "CA": [45.4215, -75.6972], "BR": [-15.7939, -47.8828], "MX": [19.4326, -99.1332], "AR": [-34.6037, -58.3816], "EG": [30.0444, 31.2357], "NG": [9.0765, 7.3986], "KE": [-1.2921, 36.8219], "MA": [34.0209, -6.8416], "AU": [-35.2809, 149.13], "NZ": [-41.2865, 174.7762], "FJ": [-18.1248, 178.4501]};
 
+        const malaysiaCities = [
+            {name:"Kuala Lumpur", code:"MY-KUL", point:[3.139,101.6869], detail:"Wilayah Persekutuan Kuala Lumpur"},
+            {name:"Ipoh", code:"MY-IPH", point:[4.5975,101.0901], detail:"Perak"},
+            {name:"George Town", code:"MY-PEN", point:[5.4141,100.3288], detail:"Pulau Pinang"},
+            {name:"Johor Bahru", code:"MY-JHB", point:[1.4927,103.7414], detail:"Johor"},
+            {name:"Kuching", code:"MY-KCH", point:[1.5533,110.3592], detail:"Sarawak"},
+            {name:"Kota Kinabalu", code:"MY-BKI", point:[5.9804,116.0735], detail:"Sabah"},
+            {name:"Kuantan", code:"MY-KUA", point:[3.8077,103.326], detail:"Pahang"},
+            {name:"Alor Setar", code:"MY-AOR", point:[6.1248,100.3678], detail:"Kedah"},
+            {name:"Melaka City", code:"MY-MKZ", point:[2.1896,102.2501], detail:"Melaka"}
+        ];
+        const seAsiaCodes = ['MY','SG','ID','TH','VN','PH'];
         let worldMap = null;
         let mapMarkers = [];
         function initWorldMap() {
@@ -497,16 +519,28 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
             if (!worldMap) return;
             mapMarkers.forEach(marker => worldMap.removeLayer(marker));
             mapMarkers = [];
-            const visible = currentFilter === 'ALL' ? nations : nations.filter(n => n.region === currentFilter);
+            if (currentFilter === 'MALAYSIA') {
+                malaysiaCities.forEach(city => {
+                    const marker = L.circleMarker(city.point, {radius:8,color:'#00ff66',weight:2,fillColor:'#00ff66',fillOpacity:.65});
+                    marker.bindPopup(`<b>${city.name}</b><br>${city.detail}<br>Coordinates: ${city.point[0].toFixed(4)}, ${city.point[1].toFixed(4)}<br><small>Geographic reference point; not a live threat location.</small>`);
+                    marker.on('click', () => { appendLog(`[MAP] ${city.name}, ${city.detail} selected.`, 'text-cyber-cyan'); });
+                    marker.addTo(worldMap); mapMarkers.push(marker);
+                });
+                worldMap.fitBounds(L.latLngBounds(malaysiaCities.map(c => c.point)).pad(0.18));
+                return;
+            }
+            const visible = currentFilter === 'ALL' ? nations : currentFilter === 'SE_ASIA' ? nations.filter(n => seAsiaCodes.includes(n.code)) : nations.filter(n => n.region === currentFilter);
             visible.forEach(n => {
                 const point = nodeCoordinates[n.code];
                 if (!point) return;
                 const marker = L.circleMarker(point, { radius:n.code==='MY'?9:6, color:n.code==='MY'?'#00ff66':'#00f0ff', weight:2, fillColor:n.code==='MY'?'#00ff66':'#00f0ff', fillOpacity:.55 });
                 marker.bindPopup(`<b>${n.name} [${n.code}]</b><br>Region: ${n.region}<br>Status: ${n.status}<br><small>Capital-city marker; not a live threat location.</small>`);
                 marker.on('click', () => inspectNation(n));
-                marker.addTo(worldMap);
-                mapMarkers.push(marker);
+                marker.addTo(worldMap); mapMarkers.push(marker);
             });
+            if (currentFilter === 'SE_ASIA') worldMap.fitBounds([[ -11, 92 ], [ 23, 141 ]], {padding:[12,12]});
+            else if (currentFilter === 'ASIA') worldMap.fitBounds([[ -10, 60 ], [ 60, 150 ]], {padding:[12,12]});
+            else if (currentFilter === 'ALL') worldMap.setView([20,10],2);
         }
         window.addEventListener('load', () => { initWorldMap(); });
 
@@ -516,7 +550,7 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
             const listContainer = document.getElementById('nation-list');
             listContainer.innerHTML = '';
             
-            const filtered = currentFilter === 'ALL' ? nations : nations.filter(n => n.region === currentFilter);
+            const filtered = currentFilter === 'MALAYSIA' ? [] : currentFilter === 'ALL' ? nations : currentFilter === 'SE_ASIA' ? nations.filter(n => seAsiaCodes.includes(n.code)) : nations.filter(n => n.region === currentFilter);
             
             filtered.forEach(n => {
                 const item = document.createElement('div');
@@ -528,22 +562,49 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
                 `;
                 listContainer.appendChild(item);
             });
+            if (currentFilter === 'MALAYSIA') {
+                malaysiaCities.forEach(city => {
+                    const item = document.createElement('div');
+                    item.className = 'bg-cyber-dark border border-cyber-border hover:border-cyber-green p-2 rounded flex justify-between items-center cursor-pointer transition';
+                    item.onclick = () => { worldMap && worldMap.setView(city.point, 10); appendLog(`[MAP] ${city.name} selected.`, 'text-cyber-cyan'); };
+                    item.innerHTML = `<span class="text-gray-300 font-bold">${city.name}</span><span class="text-[10px] text-cyber-green">${city.detail}</span>`;
+                    listContainer.appendChild(item);
+                });
+            }
         }
         renderNations();
 
         function filterRegion(region) {
             currentFilter = region;
-            ['ALL', 'ASIA', 'EUROPE', 'AMERICAS', 'AFRICA', 'OCEANIA'].forEach(r => {
+            ['ALL', 'ASIA', 'EUROPE', 'AMERICAS', 'AFRICA', 'OCEANIA', 'MALAYSIA', 'SE_ASIA'].forEach(r => {
                 const btn = document.getElementById('reg-' + r);
-                if (r === region) {
-                    btn.className = 'py-1 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan rounded font-bold transition';
-                } else {
-                    btn.className = 'py-1 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition';
-                }
+                if (!btn) return;
+                btn.className = r === region ? 'py-2 bg-cyber-cyan/20 border border-cyber-cyan text-cyber-cyan rounded font-bold transition' : 'py-2 bg-cyber-dark border border-cyber-border text-gray-400 hover:text-gray-200 rounded transition';
             });
             renderNations();
             updateMapNodes();
-            document.getElementById('radar-target-info').innerText = `SECTOR: ${region} DEFENSE GRID`;
+            const labels = {ALL:'ALL WORLD',ASIA:'ASIA',EUROPE:'EUROPE',AMERICAS:'AMERICAS',AFRICA:'AFRICA',OCEANIA:'OCEANIA',MALAYSIA:'MALAYSIA COMMAND',SE_ASIA:'SOUTHEAST ASIA COMMAND'};
+            document.getElementById('radar-target-info').innerText = `SECTOR: ${labels[region] || region} DEFENSE GRID`;
+        }
+
+        function searchMapLocation(value) {
+            const q = value.trim().toLowerCase();
+            if (!q || !worldMap) return;
+            const city = malaysiaCities.find(c => c.name.toLowerCase().includes(q));
+            if (city) {
+                filterRegion('MALAYSIA');
+                worldMap.setView(city.point, 10);
+                mapMarkers.forEach(m => { if (m.getLatLng().equals(city.point)) m.openPopup(); });
+                return;
+            }
+            const nation = nations.find(n => n.name.toLowerCase().includes(q) || n.code.toLowerCase() === q);
+            if (nation && nodeCoordinates[nation.code]) {
+                currentFilter = nation.region;
+                renderNations(); updateMapNodes();
+                worldMap.setView(nodeCoordinates[nation.code], 6);
+                const marker = mapMarkers.find(m => m.getLatLng().equals(L.latLng(nodeCoordinates[nation.code])));
+                if (marker) marker.openPopup();
+            }
         }
 
         function inspectNation(nation) {
