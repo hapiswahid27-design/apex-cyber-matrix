@@ -93,7 +93,7 @@
             <div class="flex items-center space-x-3">
                 <div class="h-3 w-3 rounded-full bg-cyber-green animate-ping"></div>
                 <h1 class="text-xl sm:text-2xl font-bold tracking-wider text-cyber-green glow-text">
-                    APEX CYBER MATRIX <span class="text-xs px-2 py-0.5 rounded bg-cyber-green/10 border border-cyber-green/30 text-cyber-green">FORTIGUARD v5.2</span>
+                    APEX CYBER MATRIX <span class="text-xs px-2 py-0.5 rounded bg-cyber-green/10 border border-cyber-green/30 text-cyber-green">FORTIGUARD v5.4</span>
                 </h1>
             </div>
             <div class="flex items-center space-x-4 sm:space-x-6 text-xs sm:text-sm">
@@ -285,15 +285,15 @@
             <!-- Tactical Counters -->
             <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box grid grid-cols-3 gap-3 text-center text-xs">
                 <div class="bg-cyber-dark border border-cyber-border p-2 rounded-lg">
-                    <div class="text-gray-400 text-[10px]">BLOCKED INBOUND</div>
+                    <div class="text-gray-400 text-[10px]">DEMO COUNTER</div>
                     <div class="text-cyber-green font-bold text-sm mt-1" id="counter-blocked">1,489,223</div>
                 </div>
                 <div class="bg-cyber-dark border border-cyber-border p-2 rounded-lg">
-                    <div class="text-gray-400 text-[10px]">ACTIVE NODES</div>
+                    <div class="text-gray-400 text-[10px]">REFERENCE NODES</div>
                     <div class="text-cyber-cyan font-bold text-sm mt-1">195 / 195</div>
                 </div>
                 <div class="bg-cyber-dark border border-cyber-border p-2 rounded-lg">
-                    <div class="text-gray-400 text-[10px]">OUTGOING STRIKES</div>
+                    <div class="text-gray-400 text-[10px]">SIMULATION COUNT</div>
                     <div class="text-amber-400 font-bold text-sm mt-1" id="counter-strikes">42,810</div>
                 </div>
             </div>
@@ -410,20 +410,28 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
                     </div>
                 </div>
 
-                <!-- Live Packet Attack Stream -->
-                <div class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box">
-                    <div class="flex justify-between items-center mb-2 border-b border-cyber-border pb-2">
-                        <h2 class="text-xs font-bold tracking-widest text-cyber-cyan uppercase flex items-center gap-2">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            Live Worldwide Threat Feed
-                        </h2>
-                        <span class="h-2 w-2 rounded-full bg-cyber-red animate-ping"></span>
-                    </div>
-                    <div id="packet-stream" class="bg-cyber-dark border border-cyber-border rounded-lg p-3 h-36 overflow-y-auto text-[11px] font-mono space-y-1 text-gray-400"><div class="text-gray-400">[23:29:54] SRC: 82.102.23.41 [FJ] - SQLi BLOCKED</div><div class="text-gray-400">[23:29:51] SRC: 82.102.23.41 [RU] - DDoS SCRUBBED</div><div class="text-gray-400">[23:29:48] SRC: 172.16.0.42 [KE] - ZERO-DAY MITIGATED</div><div class="text-gray-400">[23:29:45] SRC: 192.168.1.99 [FJ] - DDoS SCRUBBED</div><div class="text-gray-400">[23:29:42] SRC: 103.24.55.12 [AR] - DDoS SCRUBBED</div><div class="text-gray-400">[23:29:39] SRC: 82.102.23.41 [VN] - DDoS SCRUBBED</div>
-                        <div>[11:25:01] SRC: 103.24.55.12 [MY] - SQLi Blocked</div>
-                        <div>[11:25:03] SRC: 82.102.23.41 [DE] - DDoS Scrubbed</div>
+                <!-- Verified public threat intelligence: CISA KEV catalogue -->
+                <section class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-box" aria-labelledby="kev-title">
+                    <div class="flex flex-wrap justify-between items-center gap-2 mb-2 border-b border-cyber-border pb-2">
+                        <div>
+                            <h2 id="kev-title" class="text-xs font-bold tracking-widest text-cyber-cyan uppercase">Verified Threat Intelligence</h2>
+                            <p class="text-[10px] text-gray-400 mt-1">CISA Known Exploited Vulnerabilities (KEV)</p>
                         </div>
-                </div>
+                        <button id="kev-refresh" type="button" onclick="loadKevFeed()" class="px-3 py-1.5 border border-cyber-cyan text-cyber-cyan rounded text-[10px] font-bold">REFRESH FEED</button>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2 mb-3 text-[10px]">
+                        <div class="bg-cyber-dark border border-cyber-border rounded p-2"><div class="text-gray-500">CATALOGUE ENTRIES</div><div id="kev-count" class="text-cyber-green text-lg font-bold">—</div></div>
+                        <div class="bg-cyber-dark border border-cyber-border rounded p-2"><div class="text-gray-500">LAST FETCH (LOCAL)</div><div id="kev-updated" class="text-cyber-green text-xs">Not loaded</div></div>
+                    </div>
+                    <div id="kev-status" role="status" aria-live="polite" class="text-[10px] text-amber-400 mb-2">Waiting for CISA catalogue request…</div>
+                    <div id="kev-list" class="bg-cyber-dark border border-cyber-border rounded-lg p-3 max-h-72 overflow-y-auto space-y-3 text-[11px]">
+                        <p class="text-gray-400">Press REFRESH FEED to retrieve the latest published CISA KEV catalogue.</p>
+                    </div>
+                    <div class="mt-3 flex flex-wrap justify-between gap-2 text-[10px]">
+                        <span class="text-gray-500">Catalogue data, not a live incident/attack stream.</span>
+                        <a class="text-cyber-cyan underline" href="https://www.cisa.gov/known-exploited-vulnerabilities-catalog" target="_blank" rel="noopener noreferrer">Open CISA source ↗</a>
+                    </div>
+                </section>
             </div>
         </div>
 
@@ -743,30 +751,74 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
             appendLog('[Map] Peta interaktif dibuka. Tiada tindakan rangkaian dihantar.', 'text-cyber-cyan');
         }
 
-        // Demo Packet Stream & Counters (simulated data)
-        setInterval(() => {
-            const randomNation = nations[Math.floor(Math.random() * nations.length)];
-            const ips = ['103.24.55.12', '192.168.1.99', '172.16.0.42', '45.33.22.11', '82.102.23.41'];
-            const randomIp = ips[Math.floor(Math.random() * ips.length)];
-            const actions = ['SQLi BLOCKED', 'DDoS SCRUBBED', 'ZERO-DAY MITIGATED', 'PORT SECURED'];
-            const randomAction = actions[Math.floor(Math.random() * actions.length)];
-            
-            const time = new Date().toTimeString().split(' ')[0];
-            const packetStream = document.getElementById('packet-stream');
-            const div = document.createElement('div');
-            div.className = randomNation.code === 'MY' ? 'text-cyber-green font-bold' : 'text-gray-400';
-            div.innerText = `[${time}] SRC: ${randomIp} [${randomNation.code}] - ${randomAction}`;
-            packetStream.insertBefore(div, packetStream.firstChild);
-            
-            if (packetStream.children.length > 7) {
-                packetStream.removeChild(packetStream.lastChild);
-            }
+        // Demo attack counters are intentionally not animated or presented as real telemetry.
 
-            // Increment blocked inbound counter
-            const blockedElem = document.getElementById('counter-blocked');
-            let currentBlocked = parseInt(blockedElem.innerText.replace(/,/g, '')) + Math.floor(Math.random() * 5) + 1;
-            blockedElem.innerText = currentBlocked.toLocaleString();
-        }, 3000);
+        // CISA KEV: public catalogue of vulnerabilities known to be exploited in the wild.
+        // This is vulnerability intelligence, not a real-time attack or incident feed.
+        const CISA_KEV_URL = 'https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json';
+        async function loadKevFeed() {
+            const status = document.getElementById('kev-status');
+            const list = document.getElementById('kev-list');
+            const count = document.getElementById('kev-count');
+            const updated = document.getElementById('kev-updated');
+            const button = document.getElementById('kev-refresh');
+            if (!status || !list) return;
+            button.disabled = true;
+            button.textContent = 'LOADING…';
+            status.textContent = 'Connecting to the official CISA public catalogue…';
+            status.className = 'text-[10px] text-amber-400 mb-2';
+            try {
+                const response = await fetch(CISA_KEV_URL, {cache: 'no-store'});
+                if (!response.ok) throw new Error('CISA returned HTTP ' + response.status);
+                const data = await response.json();
+                if (!Array.isArray(data.vulnerabilities)) throw new Error('Unexpected catalogue format');
+                const entries = [...data.vulnerabilities].sort((a,b) => (b.dateAdded || '').localeCompare(a.dateAdded || '')).slice(0, 10);
+                count.textContent = Number(data.count || data.vulnerabilities.length).toLocaleString();
+                updated.textContent = new Date().toLocaleString();
+                list.replaceChildren();
+                entries.forEach(item => {
+                    const card = document.createElement('article');
+                    card.className = 'border-b border-cyber-border pb-3 last:border-0';
+                    const heading = document.createElement('div');
+                    heading.className = 'flex flex-wrap justify-between gap-2';
+                    const cve = document.createElement('strong');
+                    cve.className = 'text-cyber-cyan';
+                    cve.textContent = item.cveID || 'CVE not specified';
+                    const date = document.createElement('span');
+                    date.className = 'text-gray-500';
+                    date.textContent = 'Added: ' + (item.dateAdded || 'Date unavailable');
+                    heading.append(cve, date);
+                    const title = document.createElement('p');
+                    title.className = 'text-gray-200 mt-1 font-bold';
+                    title.textContent = [item.vendorProject, item.product].filter(Boolean).join(' · ') || item.vulnerabilityName || 'Known exploited vulnerability';
+                    const desc = document.createElement('p');
+                    desc.className = 'text-gray-400 mt-1 leading-relaxed';
+                    desc.textContent = item.shortDescription || item.vulnerabilityName || 'No description supplied by catalogue.';
+                    const action = document.createElement('p');
+                    action.className = 'text-amber-400 mt-1';
+                    action.textContent = 'Required action: ' + (item.requiredAction || 'Review vendor guidance and apply mitigations.');
+                    const meta = document.createElement('p');
+                    meta.className = 'text-gray-500 mt-1';
+                    meta.textContent = 'CISA due date: ' + (item.dueDate || 'Not specified') + (item.knownRansomwareCampaignUse === 'Known' ? ' · Known ransomware use' : '');
+                    card.append(heading, title, desc, action, meta);
+                    list.appendChild(card);
+                });
+                status.textContent = 'Catalogue retrieved successfully · ' + (data.catalogVersion || 'version not supplied') + ' · Published: ' + (data.dateReleased || 'date not supplied');
+                status.className = 'text-[10px] text-cyber-green mb-2';
+            } catch (error) {
+                status.textContent = 'Browser could not retrieve the feed (' + error.message + '). Open the official CISA catalogue below; no sample data is being shown.';
+                status.className = 'text-[10px] text-amber-400 mb-2';
+                list.replaceChildren();
+                const message = document.createElement('p');
+                message.className = 'text-gray-400';
+                message.textContent = 'Feed unavailable in this browser session. This may be caused by network access or browser cross-origin restrictions.';
+                list.appendChild(message);
+            } finally {
+                button.disabled = false;
+                button.textContent = 'REFRESH FEED';
+            }
+        }
+        window.addEventListener('load', () => { loadKevFeed(); });
 
         // Download Dashboard File Functionality
         function downloadDashboardFile() {
