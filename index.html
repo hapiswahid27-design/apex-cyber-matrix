@@ -2,7 +2,7 @@
 <html lang="en" class="dark"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Apex Cyber Matrix v6.0 // Cyber Security Operations Dashboard</title>
+    <title>Apex Cyber Matrix v7.0 // Cyber Security Operations Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
@@ -39,12 +39,12 @@
         .scanlines {
             background: linear-gradient(
                 rgba(18, 16, 16, 0) 50%, 
-                rgba(0, 0, 0, 0.25) 50%
+                rgba(0, 0, 0, 0.07) 50%
             ), linear-gradient(
                 90deg,
-                rgba(255, 0, 0, 0.04),
-                rgba(0, 255, 0, 0.02),
-                rgba(0, 0, 255, 0.04)
+                rgba(255, 0, 0, 0.01),
+                rgba(0, 255, 0, 0.008),
+                rgba(0, 0, 255, 0.01)
             );
             background-size: 100% 4px, 6px 100%;
         }
@@ -436,7 +436,19 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
         </div>
 
 
-        <!-- APEX CYBER MATRIX v6.0: passive intelligence and local incident workspace -->
+        <!-- v7.0 SOC workflow overview -->
+        <section class="lg:col-span-3 bg-cyber-card border border-cyber-cyan/40 rounded-xl p-4 mb-1">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <div>
+                    <h2 class="text-xs font-bold tracking-widest text-cyber-cyan">SOC WORKSPACE // V7.0</h2>
+                    <p class="text-[10px] text-gray-300 mt-1">Passive intelligence, browser diagnostics and locally managed incident records.</p>
+                </div>
+                <span class="text-[10px] border border-cyber-green/50 rounded px-2 py-1 text-cyber-green">LOCAL WORKSPACE</span>
+            </div>
+            <p class="text-[10px] text-amber-300 mt-3">Important: this is a browser-based learning and monitoring workspace. It does not perform endpoint detection, packet capture, vulnerability scanning or live attack attribution.</p>
+        </section>
+
+        <!-- APEX CYBER MATRIX v7.0: SOC incident workflow and mobile readability -->
         <section class="lg:col-span-3 grid grid-cols-1 lg:grid-cols-2 gap-6" aria-label="Version 6 security tools">
             <article class="bg-cyber-card border border-cyber-border rounded-xl p-4 glow-cyan">
                 <div class="flex flex-wrap justify-between items-center gap-2 border-b border-cyber-border pb-2 mb-3">
@@ -485,17 +497,25 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
                         <button id="incident-clear" type="button" class="px-3 py-1.5 border border-cyber-red text-cyber-red rounded text-[10px] font-bold">CLEAR</button>
                     </div>
                 </div>
-                <form id="incident-form" class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+                <form id="incident-form" class="grid grid-cols-1 sm:grid-cols-5 gap-2">
                     <input id="incident-title" required maxlength="100" placeholder="Incident / observation"
                         class="sm:col-span-2 min-w-0 bg-cyber-dark border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green placeholder-gray-500">
                     <select id="incident-severity" class="bg-cyber-dark border border-cyber-border rounded px-2 py-2 text-xs text-cyber-green">
                         <option>Low</option><option selected>Medium</option><option>High</option><option>Critical</option>
                     </select>
+                    <select id="incident-initial-status" class="bg-cyber-dark border border-cyber-border rounded px-2 py-2 text-xs text-cyber-green" aria-label="Initial incident status">
+                        <option value="Open" selected>Open</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option>
+                    </select>
                     <button type="submit" class="border border-cyber-green text-cyber-green rounded px-3 py-2 text-xs font-bold">ADD RECORD</button>
                     <textarea id="incident-notes" rows="2" maxlength="1000" placeholder="Notes, evidence reference, action taken (do not enter passwords or secrets)"
                         class="sm:col-span-4 bg-cyber-dark border border-cyber-border rounded px-3 py-2 text-xs text-cyber-green placeholder-gray-500"></textarea>
                 </form>
-                <p id="incident-status" role="status" class="text-[10px] text-gray-400 mt-2">No local records loaded.</p>
+                <div class="flex flex-wrap items-center justify-between gap-2 mt-3">
+                    <p id="incident-status" role="status" class="text-[10px] text-gray-300">No local records loaded.</p>
+                    <select id="incident-filter" class="bg-cyber-dark border border-cyber-border rounded px-2 py-1.5 text-[10px] text-cyber-green" aria-label="Filter incident records">
+                        <option value="All">All records</option><option value="Open">Open</option><option value="Investigating">Investigating</option><option value="Resolved">Resolved</option>
+                    </select>
+                </div>
                 <div id="incident-list" class="mt-3 space-y-2 text-xs"></div>
                 <p class="text-[10px] text-gray-500 mt-3">Records stay in this browser's local storage. They are not sent to a server and may be lost if site data is cleared. Export regularly to keep a copy.</p>
             </article>
@@ -984,24 +1004,74 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
         runNetworkCheck();
 
         // Incident records are stored locally on this device/browser only.
+        // Existing v6 records are retained; records without a status are treated as Open.
         const INCIDENT_KEY = 'apexCyberMatrixIncidentsV6';
         function readIncidents() {
-            try { return JSON.parse(localStorage.getItem(INCIDENT_KEY) || '[]'); } catch (_) { return []; }
+            try {
+                const value = JSON.parse(localStorage.getItem(INCIDENT_KEY) || '[]');
+                return Array.isArray(value) ? value.map((r, i) => ({
+                    id: r.id || ('legacy-' + i + '-' + String(r.createdAt || '')),
+                    title: String(r.title || 'Untitled record'),
+                    severity: ['Low','Medium','High','Critical'].includes(r.severity) ? r.severity : 'Medium',
+                    status: ['Open','Investigating','Resolved'].includes(r.status) ? r.status : 'Open',
+                    notes: String(r.notes || ''),
+                    createdAt: r.createdAt || new Date().toISOString()
+                })) : [];
+            } catch (_) { return []; }
+        }
+        function saveIncidents(records) {
+            localStorage.setItem(INCIDENT_KEY, JSON.stringify(records));
         }
         function renderIncidents() {
             const list = document.getElementById('incident-list');
             const status = document.getElementById('incident-status');
             if (!list || !status) return;
-            const records = readIncidents(); list.replaceChildren();
-            status.textContent = records.length + ' local record(s) · newest first';
-            records.slice().reverse().forEach(record => {
+            const records = readIncidents();
+            const counts = {
+                Open: records.filter(r => r.status === 'Open').length,
+                Investigating: records.filter(r => r.status === 'Investigating').length,
+                Resolved: records.filter(r => r.status === 'Resolved').length
+            };
+            const filter = document.getElementById('incident-filter');
+            const selected = filter ? filter.value : 'All';
+            const shown = records.slice().reverse().filter(r => selected === 'All' || r.status === selected);
+            status.textContent = records.length + ' total · ' + counts.Open + ' open · ' + counts.Investigating + ' investigating · ' + counts.Resolved + ' resolved';
+            list.replaceChildren();
+            if (!shown.length) {
+                const empty = document.createElement('p');
+                empty.className = 'text-gray-400 border border-cyber-border rounded p-3';
+                empty.textContent = 'No records match this filter yet.';
+                list.appendChild(empty);
+            }
+            shown.forEach(record => {
                 const card = document.createElement('div');
                 card.className = 'bg-cyber-dark border border-cyber-border rounded p-3';
-                const top = document.createElement('div'); top.className = 'flex flex-wrap justify-between gap-2';
-                const title = document.createElement('strong'); title.className = 'text-cyber-cyan'; title.textContent = record.title;
-                const meta = document.createElement('span'); meta.className = 'text-gray-500'; meta.textContent = record.severity + ' · ' + new Date(record.createdAt).toLocaleString();
-                const notes = document.createElement('p'); notes.className = 'text-gray-400 mt-2 whitespace-pre-wrap'; notes.textContent = record.notes || 'No notes';
-                top.append(title, meta); card.append(top, notes); list.appendChild(card);
+                const top = document.createElement('div'); top.className = 'flex flex-wrap justify-between gap-2 items-start';
+                const title = document.createElement('strong'); title.className = 'text-cyber-cyan break-words'; title.textContent = record.title;
+                const meta = document.createElement('span'); meta.className = 'text-gray-300'; meta.textContent = record.severity + ' · ' + record.status + ' · ' + new Date(record.createdAt).toLocaleString();
+                const notes = document.createElement('p'); notes.className = 'text-gray-300 mt-2 whitespace-pre-wrap break-words'; notes.textContent = record.notes || 'No notes';
+                const actions = document.createElement('div'); actions.className = 'flex flex-wrap gap-2 mt-3';
+                const state = document.createElement('select');
+                state.className = 'bg-cyber-card border border-cyber-border rounded px-2 py-1.5 text-[10px] text-cyber-green';
+                state.setAttribute('aria-label', 'Update status for ' + record.title);
+                ['Open','Investigating','Resolved'].forEach(value => {
+                    const option = document.createElement('option'); option.value = value; option.textContent = value;
+                    if (value === record.status) option.selected = true;
+                    state.appendChild(option);
+                });
+                state.addEventListener('change', () => {
+                    const all = readIncidents(); const item = all.find(r => r.id === record.id);
+                    if (item) { item.status = state.value; saveIncidents(all); renderIncidents(); }
+                });
+                const remove = document.createElement('button');
+                remove.type = 'button'; remove.className = 'border border-cyber-red/70 text-red-300 rounded px-2 py-1.5 text-[10px]';
+                remove.textContent = 'DELETE';
+                remove.addEventListener('click', () => {
+                    if (!confirm('Delete this incident record from this device?')) return;
+                    saveIncidents(readIncidents().filter(r => r.id !== record.id)); renderIncidents();
+                });
+                actions.append(state, remove);
+                top.append(title, meta); card.append(top, notes, actions); list.appendChild(card);
             });
         }
         const incidentForm = document.getElementById('incident-form');
@@ -1010,20 +1080,32 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
             const title = document.getElementById('incident-title').value.trim();
             if (!title) return;
             const records = readIncidents();
-            records.push({ title, severity: document.getElementById('incident-severity').value,
-                notes: document.getElementById('incident-notes').value.trim(), createdAt: new Date().toISOString() });
+            records.push({
+                id: 'inc-' + Date.now() + '-' + Math.random().toString(36).slice(2, 8),
+                title,
+                severity: document.getElementById('incident-severity').value,
+                status: document.getElementById('incident-initial-status').value,
+                notes: document.getElementById('incident-notes').value.trim(),
+                createdAt: new Date().toISOString()
+            });
             try {
-                localStorage.setItem(INCIDENT_KEY, JSON.stringify(records));
-                incidentForm.reset(); renderIncidents();
-            } catch (_) { document.getElementById('incident-status').textContent = 'Storage unavailable. Export may not be possible in this browser mode.'; }
+                saveIncidents(records);
+                incidentForm.reset();
+                document.getElementById('incident-initial-status').value = 'Open';
+                renderIncidents();
+            } catch (_) {
+                document.getElementById('incident-status').textContent = 'Storage unavailable in this browser session. Export or use another browser mode.';
+            }
         });
+        const incidentFilter = document.getElementById('incident-filter');
+        if (incidentFilter) incidentFilter.addEventListener('change', renderIncidents);
         const exportButton = document.getElementById('incident-export');
         if (exportButton) exportButton.addEventListener('click', () => {
-            const rows = [['Date','Title','Severity','Notes'], ...readIncidents().map(r => [r.createdAt,r.title,r.severity,r.notes])];
+            const rows = [['Date','Title','Severity','Status','Notes'], ...readIncidents().map(r => [r.createdAt,r.title,r.severity,r.status,r.notes])];
             const csv = rows.map(row => row.map(value => '"' + String(value ?? '').replace(/"/g, '""') + '"').join(',')).join('\r\n');
             const blob = new Blob(['\uFEFF' + csv], {type:'text/csv;charset=utf-8'});
             const url = URL.createObjectURL(blob); const a = document.createElement('a');
-            a.href = url; a.download = 'apex-cyber-matrix-incidents.csv'; a.click(); URL.revokeObjectURL(url);
+            a.href = url; a.download = 'apex-cyber-matrix-incidents-v7.csv'; a.click(); URL.revokeObjectURL(url);
         });
         const clearButton = document.getElementById('incident-clear');
         if (clearButton) clearButton.addEventListener('click', () => {
@@ -1041,7 +1123,7 @@ print("[+] Access Granted. Global Threat Shield synchronized.")</textarea>
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'APEX_CYBER_MATRIX_v6.0.html';
+            a.download = 'APEX_CYBER_MATRIX_v7.0.html';
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
